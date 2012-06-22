@@ -1,0 +1,4 @@
+server.example.com
+foo@server2.example.com
+server3.example.com
+:
