@@ -1,7 +1,9 @@
 #!/bin/bash
 
-#  initialize.sh configFile loginFile
-#  
+#  initialize.sh configFile [TODO For Multiple machines: loginFile]
+#
+#  To use loginFile, you need to have password-less ssh
+#  ssh-copy-id -i ~/.ssh/id_rsa.pub username@remote-server
 #
 #  Created by Niketan Pansare
 
@@ -42,34 +44,19 @@ do
   done
 done
 
-#To include the local computer add the special sshlogin ':' to the list:
-# server.example.com
-# foo@server2.example.com
-# server3.example.com
-# :
-
-
-
-# seq 1 5 | parallel echo
-# seq 1 5 | parallel --max-args=2 echo
-
-# Delayed start (will sleep between random 1-5 seconds before starting a job):
-# seq 1 5 | parallel --max-args=2 'sleep $((RANDOM*4/32767+1));echo {}'
-
-
-#ssh-copy-id -i ~/.ssh/id_rsa.pub username@
+# Randomizing the control file helps in load balancing as different classifiers have different requirements (cpu-demanding, memory demanding, etc)
+sort -R $CONTROL_FILE > $CONTROL_FILE".temp"
 
 # Replacing xargs by more powerful gnu-parallel: cat $CONTROL_FILE | xargs --max-args=1 --max-procs=100 ./runClassifier.sh &
 # Delayed start makes sure that machines don't get overloaded. It may however adversely affect small jobs.
 # However, the assumption is that running a classification task is usually extremely time-consuming task, so sleeping for few second
 # should not affect overall performance drasctically.
-# --sshloginfile $LOGIN_FILE
-
-# Randomizing the control file helps in load balancing as different classifiers have different requirements (cpu-demanding, memory demanding, etc)
-sort -R $CONTROL_FILE > $CONTROL_FILE".temp"
+# TODO For Multiple machines: --sshloginfile $LOGIN_FILE
 cat $CONTROL_FILE".temp" | parallel --max-args=1 --load 95% 'sleep $((RANDOM*4/32767+1)); ~/yadmt/runClassifier {}'
+
+
 rm $CONTROL_FILE".temp" $CONTROL_FILE &> /dev/null
 
 # Use --tag to debug
-# parallel --tag --nonall --sshloginfile $LOGIN_FILE 'cat $ACCURACY_FILE' > $ACCURACY_FILE".final" 
-#parallel --tag --nonall --sshloginfile $LOGIN_FILE 'cat $ACCURACY_FILE' > $ACCURACY_FILE".final"
+# TODO For Multiple machines:
+# parallel --nonall --sshloginfile $LOGIN_FILE 'cat $ACCURACY_FILE' > $ACCURACY_FILE".final" 
