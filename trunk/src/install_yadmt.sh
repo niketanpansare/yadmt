@@ -1,7 +1,5 @@
 #!/bin/bash
 
-####################################
-# Ubuntu specific steps
 if ! java -version &> /dev/null
 then
   echo "Installing Java"
@@ -11,14 +9,13 @@ fi
 sudo apt-get update
 sudo apt-get install build-essential
 sudo apt-get install unzip
-####################################
 
 USER_HOME=$(eval echo ~${SUDO_USER})
 YADMT_DIR=$USER_HOME"/yadmt"
 INSTALL_DIR=`pwd`
 
 echo "Installing yadmt files"
-mkdir $YADMT_DIR &> /dev/null
+mkdir $YADMT_DIR 
 chmod +x *.sh
 cp yadmt.sh $YADMT_DIR"/yadmt"
 cp getParameterName.sh $YADMT_DIR"/getParameterName"
@@ -28,22 +25,25 @@ g++ GetMetaInformationOfInputSVM.cpp Assert.cpp -o $YADMT_DIR"/GetMetaInformatio
 
 echo "Installing SVM Light"
 cd $YADMT_DIR
-mkdir svm_light &> /dev/null
-cd svm_light
-wget http://download.joachims.org/svm_light/current/svm_light.tar.gz
-tar -xzf svm_light.tar.gz
-make
+mkdir svm_light 
+cd svm_light/
+wget http://download.joachims.org/svm_light/current/svm_light_linux.tar.gz
+tar -xzf svm_light_linux.tar.gz
 cp svm_learn $YADMT_DIR
 cp svm_classify $YADMT_DIR
 cd $YADMT_DIR
 rm -rf $YADMT_DIR"/svm_light/"
+if ! ./svm_learn --help &> /dev/null
+then
+  sudo apt-get install ia32-libs
+fi
 
 echo "Installing SVM Multiclass"
 cd $YADMT_DIR
-mkdir svm_multiclass &> /dev/null
-cd svm_multiclass
-wget http://download.joachims.org/svm_multiclass/current/svm_multiclass.tar.gz
-tar -xzf svm_multiclass.tar.gz
+mkdir svm_multiclass 
+cd svm_multiclass/
+http://download.joachims.org/svm_multiclass/current/svm_multiclass_linux.tar.gz
+tar -xzf svm_multiclass_linux.tar.gz
 make
 cp svm_multiclass_learn $YADMT_DIR
 cp svm_multiclass_classify $YADMT_DIR
@@ -52,7 +52,7 @@ rm -rf $YADMT_DIR"/svm_multiclass/"
 
 echo "Installing Weka"
 cd $YADMT_DIR
-mkdir weka &> /dev/null
+mkdir weka 
 cd weka
 wget "http://prdownloads.sourceforge.net/weka/weka-3-6-7.zip"
 unzip "weka-3-6-7.zip"
