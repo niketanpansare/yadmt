@@ -40,39 +40,35 @@ fi
 ###########################
 # Locking mechanism to avoid race conditions when parallel runs
 function acquire_lock {
-  LOCK_ACQUIRED="FALSE"
+  local LOCK_ACQUIRED="FALSE"
   while [ "$LOCK_ACQUIRED" == "FALSE" ]; 
   do
     if ! mkdir "$LOCKDIR" 2> /dev/null
     then
       sleep 1s
     else
-      LOCK_ACQUIRED="TRUE"
+      local LOCK_ACQUIRED="TRUE"
     fi
   done
 }
 function release_lock {
-  rm -r "$LOCKDIR" &> /dev/null
+  rm -rf "$LOCKDIR" &> /dev/null
 }
 ###########################
-CLEANED_UP="FALSE"
 function cleanup {
-  if [ "$CLEANED_UP" == "FALSE" ]; then
-    CLEANED_UP="TRUE"
-    # cleanup code: Don't delete lock on finish since it can be held by some other instance of this script
-    rm -rf $RANDOMIZED_INPUT_FILE $MODEL_FILE $TEMP_FILE1 $TEMP_FILE2 $TEMP_FILE3 $PRED_FILE $TRAIN_FILE $TEST_FILE &> /dev/null 
-    if [ "$EXPERIMENTAL_SETUP" != "1" ]; then 
-      FREE_DISK=`df /home | awk '{ print $5 }' | tail -n 1 | sed 's/%//'`
-      if [ "$FREE_DISK" -gt "$MAXIMUM_DISK_SPACE_TO_USE" ]; then
-        acquire_lock
-        # Least recently used algorithm
-        # Delete all but the most recent 2 input files
-        cd $YADMT_DIR"/data"
-        (ls -t|head -n 2;ls)|sort|uniq -u|xargs rm
-        release_lock
-      fi
-    fi  
-  fi
+  # cleanup code: Don't delete lock on finish since it can be held by some other instance of this script
+  rm -rf $RANDOMIZED_INPUT_FILE $MODEL_FILE $TEMP_FILE1 $TEMP_FILE2 $TEMP_FILE3 $PRED_FILE $TRAIN_FILE $TEST_FILE &> /dev/null 
+  if [ "$EXPERIMENTAL_SETUP" != "1" ]; then 
+    FREE_DISK=`df /home | awk '{ print $5 }' | tail -n 1 | sed 's/%//'`
+    if [ "$FREE_DISK" -gt "$MAXIMUM_DISK_SPACE_TO_USE" ]; then
+      acquire_lock
+      # Least recently used algorithm
+      # Delete all but the most recent 2 input files
+      cd $YADMT_DIR"/data"
+      (ls -t|head -n 2;ls)|sort|uniq -u|xargs rm
+      release_lock
+    fi
+  fi  
 }
 # Trap user interrupts
 trap "cleanup; exit 0" SIGHUP SIGINT SIGTERM
@@ -109,7 +105,7 @@ elif [ "$EXPERIMENTAL_SETUP" == "3" ]; then
   exit 1
 fi
 
-acquire_lock
+#acquire_lock --> Needs to acquire lock since there is a chance that someone else might delete the input file. But since you delete only when disk reaches 95% and that too files other than recent 3, its highly unlikely that someone lese will delete the input file. On other hand, not locking here improves the performance drastically.
 # sort -R fails for Macbook Pro
 if ! sort -R $INPUT_FILE > $RANDOMIZED_INPUT_FILE 2> /dev/null
 then
@@ -117,7 +113,7 @@ then
   rm $RANDOMIZED_INPUT_FILE &> /dev/null
   exit 1
 fi
-release_lock
+#release_lock
 
 MODEL_FILE="model."$RANDOM"-"$RANDOM"-"$RANDOM".txt"
 TEMP_FILE1="tempFile."$RANDOM"-"$RANDOM"-"$RANDOM".txt"
