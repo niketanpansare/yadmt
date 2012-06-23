@@ -18,15 +18,16 @@ HOST_NAME=$(hostname --long)
 LOGIN_FILE=$YADMT_DIR"/login.txt"
 
 # Delete lock file before starting yadmt
-rm -r /tmp/yadmt.lock/ &> /dev/null
+rm -rf /tmp/yadmt.lock/ &> /dev/null
 
 ###########################
 # cleanup code
-CLEANED_UP="FALSE"
 function cleanup {
-  if [ "$CLEANED_UP" == "FALSE" ]; then
-    CLEANED_UP="TRUE"
-    rm -rf $CONFIG_FILE $CONTROL_FILE &> /dev/null
+  rm -rf $CONFIG_FILE $CONTROL_FILE &> /dev/null
+  if [ "$EXPERIMENTAL_SETUP" == "1" ]; then
+    rm -rf /tmp/yadmt.lock/ &> /dev/null
+  else
+    parallel --sshloginfile $LOGIN_FILE "rm -rf /tmp/yadmt.lock/" &> /dev/null
   fi
 }
 # Trap user interrupts
@@ -169,37 +170,53 @@ if [ "$TASK1" == "1" ]; then
   echo ""
   echo "NUM_CYCLES="$NUM_CYCLES >> $CONFIG_FILE
 
-  echo -n "Enter the file name where you wish to store the accuracy (accuracy.txt):"
-  read ACCURACY_FILE
-  echo ""
-  echo "ACCURACY_FILE="$ACCURACY_FILE >> $CONFIG_FILE
-  
-  echo -n "Enter the file name where you wish to store the results by each classifier (result.txt):"
-  read RESULTS_FILE
-  echo ""
-  echo "RESULTS_FILE="$RESULTS_FILE >> $CONFIG_FILE
-
-  echo "Make sure that you specify absolute path for below files."
-  echo -n "Enter the file name that contains list of input files (files.txt):"
-  read FILES
-  echo ""
-  echo "FILES="$FILES >> $CONFIG_FILE
-
-  echo "Most experiments require to compare different models/parameters (example: features for CTM or LDA). yadmt assumes that:"
-  echo "- One input file (in format of SVMLight/SVMMulticlass) is generated per parameter."
-  echo "- For comparing different parameters, user has program X that takes the input file name and outputs string denoting the parameter name for that input file."
-  echo "- Default program X outputs the string \"parameter1\" for every input file"
-  echo -n "Do you want to use default program X (y/n):"
+  echo -n "Do you wish use default values for accuracy file (accuracy.txt), results file (result.txt), list of files (files.txt) and ProgramX (getParameterName) -> (y/n):"
   read ANS
   echo ""
-  if [ "$ANS" == "n" ]; then
-    echo -n "Enter the path of user-defined program X:"
-    read PROGRAMX
-    echo ""
-  else 
+  if [ "$ANS" == "y" ]; then
+    ACCURACY_FILE=$YADMT_DIR"/accuracy.txt"
+    RESULTS_FILE=$YADMT_DIR"/result.txt"
+    FILES=$YADMT_DIR"/files.txt"
     PROGRAMX=$YADMT_DIR"/getParameterName"
+    echo "ACCURACY_FILE="$ACCURACY_FILE >> $CONFIG_FILE
+    echo "RESULTS_FILE="$RESULTS_FILE >> $CONFIG_FILE
+    echo "FILES="$FILES >> $CONFIG_FILE
+    echo "PROGRAMX="$PROGRAMX >> $CONFIG_FILE
+  else
+
+    echo -n "Enter the file name where you wish to store the accuracy (accuracy.txt):"
+    read ACCURACY_FILE
+    echo ""
+    echo "ACCURACY_FILE="$ACCURACY_FILE >> $CONFIG_FILE
+    
+    echo -n "Enter the file name where you wish to store the results by each classifier (result.txt):"
+    read RESULTS_FILE
+    echo ""
+    echo "RESULTS_FILE="$RESULTS_FILE >> $CONFIG_FILE
+
+    echo "Make sure that you specify absolute path for below files."
+    echo -n "Enter the file name that contains list of input files (files.txt):"
+    read FILES
+    echo ""
+    echo "FILES="$FILES >> $CONFIG_FILE
+
+    echo "Most experiments require to compare different models/parameters (example: features for CTM or LDA). yadmt assumes that:"
+    echo "- One input file (in format of SVMLight/SVMMulticlass) is generated per parameter."
+    echo "- For comparing different parameters, user has program X that takes the input file name and outputs string denoting the parameter name for that input file."
+    echo "- Default program X outputs the string \"parameter1\" for every input file"
+    echo -n "Do you want to use default program X (y/n):"
+    read ANS
+    echo ""
+    if [ "$ANS" == "n" ]; then
+      echo -n "Enter the path of user-defined program X:"
+      read PROGRAMX
+      echo ""
+    else 
+      PROGRAMX=$YADMT_DIR"/getParameterName"
+    fi
+    echo "PROGRAMX="$PROGRAMX >> $CONFIG_FILE
+
   fi
-  echo "PROGRAMX="$PROGRAMX >> $CONFIG_FILE
   
 elif [ "$TASK1" == "2" ]; then
   # Topic Modeling
@@ -276,7 +293,8 @@ if [ "$TASK" == "CLASSIFICATION" ]; then
 
   # Replacing xargs by more powerful gnu-parallel: cat $CONTROL_FILE | xargs --max-args=1 --max-procs=100 ./runClassifier.sh &
   # Delayed start makes sure that machines don't get overloaded. It may however adversely affect small jobs. However, the assumption is that running a classification task is usually extremely time-consuming task, so sleeping for few second should not affect overall performance drasctically.
-  # TODO For Multiple machines: --sshloginfile $LOGIN_FILE
+  #RANDOM_SLEEP="sleep $((RANDOM*2/32767+1));"
+  RANDOM_SLEEP=""
   RUN_CLASSIFIER_PATH=$YADMT_DIR"/runClassifier"
   if [ "$IS_WIZARD" == "TRUE" ]; then
     echo -n "Running classification task. Please wait "
@@ -286,27 +304,32 @@ if [ "$TASK" == "CLASSIFICATION" ]; then
     trap "stop_progress_ind $pid; exit" INT TERM EXIT
 
     if [ "$EXPERIMENTAL_SETUP" == "1"  ]; then
-      cat $CONTROL_FILE | parallel --max-args=1 --load 95% "sleep $((RANDOM*2/32767+1));"$RUN_CLASSIFIER_PATH' {};'
+      cat $CONTROL_FILE | parallel --max-args=1 --load 95% $RANDOM_SLEEP$RUN_CLASSIFIER_PATH' {};'
     else
       # first delete previous data folder
       parallel --sshloginfile $LOGIN_FILE "rm -rf "$YADMT_DIR"/data" &> /dev/null
+      parallel --sshloginfile $LOGIN_FILE "rm -rf /tmp/yadmt.lock/" &> /dev/null
+     
       # then start the program
-      cat $CONTROL_FILE | parallel --max-args=1 --sshloginfile $LOGIN_FILE --load 95% "sleep $((RANDOM*2/32767+1));"$RUN_CLASSIFIER_PATH' {};'
+      cat $CONTROL_FILE | parallel --max-args=1 --sshloginfile $LOGIN_FILE --load 95% $RANDOM_SLEEP$RUN_CLASSIFIER_PATH' {};'
       # delete after finishing the program
       parallel --sshloginfile $LOGIN_FILE "rm -rf "$YADMT_DIR"/data" &> /dev/null
+      parallel --sshloginfile $LOGIN_FILE "rm -rf /tmp/yadmt.lock/" &> /dev/null
     fi
 
     stop_progress_ind $pid
   else
       if [ "$EXPERIMENTAL_SETUP" == "1"  ]; then
-        cat $CONTROL_FILE | parallel --max-args=1 --load 95% "sleep $((RANDOM*2/32767+1));"$RUN_CLASSIFIER_PATH' {}'
+        cat $CONTROL_FILE | parallel --max-args=1 --load 95% $RANDOM_SLEEP$RUN_CLASSIFIER_PATH' {}'
       else
         # first delete previous data folder
         parallel --sshloginfile $LOGIN_FILE "rm -rf "$YADMT_DIR"/data" &> /dev/null
+        parallel --sshloginfile $LOGIN_FILE "rm -rf /tmp/yadmt.lock/" &> /dev/null
         # then start the program
-        cat $CONTROL_FILE | parallel --max-args=1 --sshloginfile $LOGIN_FILE --load 95% "sleep $((RANDOM*2/32767+1));"$RUN_CLASSIFIER_PATH' {}'
+        cat $CONTROL_FILE | parallel --max-args=1 --sshloginfile $LOGIN_FILE --load 95% $RANDOM_SLEEP$RUN_CLASSIFIER_PATH' {}'
         # delete after finishing the program
         parallel --sshloginfile $LOGIN_FILE "rm -rf "$YADMT_DIR"/data" &> /dev/null
+        parallel --sshloginfile $LOGIN_FILE "rm -rf /tmp/yadmt.lock/" &> /dev/null
       fi
   fi
 
