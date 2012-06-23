@@ -31,9 +31,7 @@ function cleanup {
   fi
 }
 # Trap user interrupts
-trap "cleanup; exit 0" SIGHUP SIGINT SIGTERM
-trap "cleanup;" EXIT
-trap "cleanup;" ERR
+trap "cleanup; exit" INT TERM EXIT ERR
 ###########################
 
 
@@ -304,32 +302,29 @@ if [ "$TASK" == "CLASSIFICATION" ]; then
     trap "stop_progress_ind $pid; exit" INT TERM EXIT
 
     if [ "$EXPERIMENTAL_SETUP" == "1"  ]; then
+      rm -rf $YADMT_DIR"/data" /tmp/yadmt.lock/ $ACCURACY_FILE $RESULTS_FILE &> /dev/null
       cat $CONTROL_FILE | parallel --max-args=1 --load 95% $RANDOM_SLEEP$RUN_CLASSIFIER_PATH' {};'
     else
       # first delete previous data folder
-      parallel --sshloginfile $LOGIN_FILE "rm -rf "$YADMT_DIR"/data" &> /dev/null
-      parallel --sshloginfile $LOGIN_FILE "rm -rf /tmp/yadmt.lock/" &> /dev/null
-     
+      parallel --sshloginfile $LOGIN_FILE "rm -rf "$YADMT_DIR"/data /tmp/yadmt.lock/ $ACCURACY_FILE $RESULTS_FILE" &> /dev/null
       # then start the program
       cat $CONTROL_FILE | parallel --max-args=1 --sshloginfile $LOGIN_FILE --load 95% $RANDOM_SLEEP$RUN_CLASSIFIER_PATH' {};'
       # delete after finishing the program
-      parallel --sshloginfile $LOGIN_FILE "rm -rf "$YADMT_DIR"/data" &> /dev/null
-      parallel --sshloginfile $LOGIN_FILE "rm -rf /tmp/yadmt.lock/" &> /dev/null
+      parallel --sshloginfile $LOGIN_FILE "rm -rf "$YADMT_DIR"/data /tmp/yadmt.lock/" &> /dev/null
     fi
 
     stop_progress_ind $pid
   else
       if [ "$EXPERIMENTAL_SETUP" == "1"  ]; then
+        rm -rf $YADMT_DIR"/data" /tmp/yadmt.lock/ $ACCURACY_FILE $RESULTS_FILE &> /dev/null
         cat $CONTROL_FILE | parallel --max-args=1 --load 95% $RANDOM_SLEEP$RUN_CLASSIFIER_PATH' {}'
       else
         # first delete previous data folder
-        parallel --sshloginfile $LOGIN_FILE "rm -rf "$YADMT_DIR"/data" &> /dev/null
-        parallel --sshloginfile $LOGIN_FILE "rm -rf /tmp/yadmt.lock/" &> /dev/null
+        parallel --sshloginfile $LOGIN_FILE "rm -rf "$YADMT_DIR"/data /tmp/yadmt.lock/ $ACCURACY_FILE $RESULTS_FILE" &> /dev/null
         # then start the program
         cat $CONTROL_FILE | parallel --max-args=1 --sshloginfile $LOGIN_FILE --load 95% $RANDOM_SLEEP$RUN_CLASSIFIER_PATH' {}'
         # delete after finishing the program
-        parallel --sshloginfile $LOGIN_FILE "rm -rf "$YADMT_DIR"/data" &> /dev/null
-        parallel --sshloginfile $LOGIN_FILE "rm -rf /tmp/yadmt.lock/" &> /dev/null
+        parallel --sshloginfile $LOGIN_FILE "rm -rf "$YADMT_DIR"/data /tmp/yadmt.lock/" &> /dev/null
       fi
   fi
 

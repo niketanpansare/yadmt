@@ -71,9 +71,7 @@ function cleanup {
   fi  
 }
 # Trap user interrupts
-trap "cleanup; exit 0" SIGHUP SIGINT SIGTERM
-trap "cleanup;" EXIT
-trap "cleanup;" ERR
+trap "cleanup; exit" INT TERM EXIT ERR
 ###########################
 
 #Read variables: MAX_MEMORY_CLASSIFIER, ACCURACY_FILE, RESULTS_FILE, MASTER, EXPERIMENTAL_SETUP
