@@ -58,17 +58,18 @@ function release_lock {
 function cleanup {
   # cleanup code: Don't delete lock on finish since it can be held by some other instance of this script
   rm -rf $RANDOMIZED_INPUT_FILE $MODEL_FILE $TEMP_FILE1 $TEMP_FILE2 $TEMP_FILE3 $PRED_FILE $TRAIN_FILE $TEST_FILE &> /dev/null 
-  if [ "$EXPERIMENTAL_SETUP" != "1" ]; then 
-    FREE_DISK=`df /home | awk '{ print $5 }' | tail -n 1 | sed 's/%//'`
-    if [ "$FREE_DISK" -gt "$MAXIMUM_DISK_SPACE_TO_USE" ]; then
-      acquire_lock
+#if [ "$EXPERIMENTAL_SETUP" != "1" ]; then 
+# Ignoring any disk issue for now !!
+#FREE_DISK=`df /home | awk '{ print $5 }' | tail -n 1 | sed 's/%//'`
+#if [ "$FREE_DISK" -gt "$MAXIMUM_DISK_SPACE_TO_USE" ]; then
+#acquire_lock
       # Least recently used algorithm
       # Delete all but the most recent 2 input files
-      cd $YADMT_DIR"/data"
-      (ls -t|head -n 2;ls)|sort|uniq -u|xargs rm
-      release_lock
-    fi
-  fi  
+#cd $YADMT_DIR"/data"
+#(ls -t|head -n 2;ls)|sort|uniq -u|xargs rm
+#release_lock
+#fi
+#fi  
 }
 # Trap user interrupts
 trap "cleanup; exit" INT TERM EXIT ERR
