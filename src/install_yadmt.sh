@@ -17,7 +17,7 @@ YADMT_DIR=$USER_HOME"/yadmt"
 echo "Installing yadmt files"
 mkdir $YADMT_DIR 
 chmod +x *.sh
-cp yadmt.sh $YADMT_DIR
+cp yadmt.sh $YADMT_DIR"/yadmt"
 cp getParameterName.sh $YADMT_DIR"/getParameterName"
 cp runClassifier.sh $YADMT_DIR"/runClassifier" 
 g++ GenerateArffFiles.cpp Assert.cpp -o $YADMT_DIR"/GenerateArffFiles"
@@ -42,7 +42,7 @@ echo "Installing SVM Multiclass"
 cd $YADMT_DIR
 mkdir svm_multiclass 
 cd svm_multiclass/
-http://download.joachims.org/svm_multiclass/current/svm_multiclass_linux.tar.gz
+wget http://download.joachims.org/svm_multiclass/current/svm_multiclass_linux.tar.gz
 tar -xzf svm_multiclass_linux.tar.gz
 make
 cp svm_multiclass_learn $YADMT_DIR
@@ -59,7 +59,6 @@ unzip "weka-3-6-7.zip"
 cp "weka-3-6-7/weka.jar" $YADMT_DIR
 cd $YADMT_DIR
 rm -rf $YADMT_DIR"/weka/"
-
 
 if ! parallel --help &> /dev/null
 then

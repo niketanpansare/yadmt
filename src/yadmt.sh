@@ -14,8 +14,9 @@ USER_HOME=$(eval echo ~${SUDO_USER})
 YADMT_DIR=$USER_HOME"/yadmt"
 USER_NAME=$(id -un)
 HOST_NAME=$(hostname --long)
+SERVERS=""
 
-LOGIN_FILE=$YADMT_DIR"/login.txt"
+LOGIN_FILE=$YADMT_DIR"/loginFile"
 
 # Delete lock file before starting yadmt
 rm -rf /tmp/yadmt.lock/ &> /dev/null
@@ -24,11 +25,6 @@ rm -rf /tmp/yadmt.lock/ &> /dev/null
 # cleanup code
 function cleanup {
   rm -rf $CONFIG_FILE $CONTROL_FILE &> /dev/null
-  if [ "$EXPERIMENTAL_SETUP" == "1" ]; then
-    rm -rf /tmp/yadmt.lock/ &> /dev/null
-  else
-    parallel --sshloginfile $LOGIN_FILE "rm -rf /tmp/yadmt.lock/" &> /dev/null
-  fi
 }
 # Trap user interrupts
 trap "cleanup; exit" INT TERM EXIT ERR
@@ -46,7 +42,7 @@ IS_WIZARD="TRUE"
 # 1 - Single machine, 2 - multiple machines (accessible via ssh), 3 - EC2 cluster 
 echo "yadmt supports following configuration:"
 echo "1. Single machine"
-echo "2. Multiple machines (accessible via passwordless ssh)"
+echo "2. Cluster"
 echo -n "Which configuration do you want to run (1,2):"
 read ANS
 echo ""
@@ -56,48 +52,63 @@ if [ "$ANS" == "1" ]; then
   echo "OK, will run yadmt on this machine only."
   echo ""
 elif [ "$ANS" == "2" ]; then 
-
-  echo -n "Do you want to use this machine i.e. " $USER_NAME"@"$HOST_NAME "(y/n):"
+  # Configuring Cluster 
+  echo -n "Have you already created" $LOGIN_FILE "(y/n):"
   read ANS
   echo ""
-  if [ "$ANS" == "y" ]; then
-    echo ":" > $LOGIN_FILE
-  elif [ "$ANS" == "n" ]; then
-    echo -n "" > $LOGIN_FILE
-  else
-    echo >&2 $PGM_NAME " - Invalid input."
-    exit 1
-  fi
-
-  ANS="y"
-  while "$ANS" == "y"
-  do
-    echo -n "Do you want to use more machine (y/n):"
+  if [ "$ANS" == "n" ]; then
+  # Creating LOGIN_FILE
+    echo -n "Do you want to use this machine i.e. " $USER_NAME"@"$HOST_NAME "(y/n):"
     read ANS
+    echo ""
     if [ "$ANS" == "y" ]; then
-      echo "Login info of a remote machine can be username@remote-machine or just remote-machine"
-      echo -n "Enter login info:"
-      read REMOTE_LOGIN_INFO
-      echo $REMOTE_LOGIN_INFO >> $LOGIN_FILE
+      echo ":" > $LOGIN_FILE
+#SERVERS=":"
+    elif [ "$ANS" == "n" ]; then
+      echo -n "" > $LOGIN_FILE
+    else
+      echo >&2 $PGM_NAME " - Invalid input."
+      exit 1
     fi
-  done
-  
-  echo ""
 
-  echo "For sharing data across these machines, yadmt allows following option:"
-  echo "1. SCP file transfer among machines"
-  echo "2. Amazon S3"
-  echo -n "Which option do you want(1,2):"
-  read ANS
-  echo ""
-  if [ "$ANS" == "1" ]; then 
-    EXPERIMENTAL_SETUP="2"
-  elif [ "$ANS" == "2" ]; then 
-    EXPERIMENTAL_SETUP="3"
-  else
-    echo >&2 $PGM_NAME " - Invalid option."
-    exit 1
+    ANS="y"
+    while [ "$ANS" == "y" ]
+    do
+      echo -n "Do you want to use more machine (y/n):"
+      read ANS
+      if [ "$ANS" == "y" ]; then
+        echo -n "Enter the remote machine name:"
+        read REMOTE_LOGIN_INFO
+        echo $REMOTE_LOGIN_INFO >> $LOGIN_FILE
+#if [ "$SERVERS" == "" ]; then
+#  SERVERS=$REMOTE_LOGIN_INFO
+#else
+#  SERVERS=$REMOTE_LOGIN_INFO","$SERVERS
+#fi
+
+      fi
+    done
+    echo ""
+  # Done creating LOGIN_FILE
   fi
+
+#echo "For sharing data across these machines, yadmt allows following option:"
+#echo "1. SCP file transfer among machines"
+#echo "2. Amazon S3"
+#echo -n "Which option do you want(1,2):"
+#read ANS
+#echo ""
+#if [ "$ANS" == "1" ]; then 
+#  EXPERIMENTAL_SETUP="2"
+#elif [ "$ANS" == "2" ]; then 
+#  EXPERIMENTAL_SETUP="3"
+#else
+#  echo >&2 $PGM_NAME " - Invalid option."
+#  exit 1
+#fi
+  EXPERIMENTAL_SETUP="2"
+
+  # Done configuring Cluster 
 else
   echo >&2 $PGM_NAME " - Invalid configuration."
   exit 1
@@ -106,8 +117,8 @@ fi
 
 echo "yadmt supports following tasks:"
 echo "1. Classification"
-echo "2. Topic Modelling"
-echo -n "Which task do you wish to perform (1,2,...):"
+echo "2. Topic Modelling (not supported yet)"
+echo -n "Which task do you wish to perform (1,2):"
 read TASK1
 echo ""
 
@@ -168,14 +179,20 @@ if [ "$TASK1" == "1" ]; then
   echo ""
   echo "NUM_CYCLES="$NUM_CYCLES >> $CONFIG_FILE
 
-  echo -n "Do you wish use default values for accuracy file (accuracy.txt), results file (result.txt), list of files (files.txt) and ProgramX (getParameterName) -> (y/n):"
+  ACCURACY_FILE=$YADMT_DIR"/accuracy.txt"
+  RESULTS_FILE=$YADMT_DIR"/result.txt"
+  FILES=$YADMT_DIR"/files.txt"
+  PROGRAMX=$YADMT_DIR"/getParameterName"
+  echo "Following are default values to run the classifiers:"
+  echo "- Store accuracy of classifiers in" $ACCURACY_FILE 
+  echo "- Store all the output generated in" $RESULTS_FILE 
+  echo "- Use" $FILES "to read the path of input files"
+  echo "- Use default ProgramX" $PROGRAMX
+  echo -n "Do you want to use them (y/n):"
   read ANS
+
   echo ""
   if [ "$ANS" == "y" ]; then
-    ACCURACY_FILE=$YADMT_DIR"/accuracy.txt"
-    RESULTS_FILE=$YADMT_DIR"/result.txt"
-    FILES=$YADMT_DIR"/files.txt"
-    PROGRAMX=$YADMT_DIR"/getParameterName"
     echo "ACCURACY_FILE="$ACCURACY_FILE >> $CONFIG_FILE
     echo "RESULTS_FILE="$RESULTS_FILE >> $CONFIG_FILE
     echo "FILES="$FILES >> $CONFIG_FILE
@@ -235,27 +252,79 @@ fi
 # Has MAX_MEMORY_CLASSIFIER, ACCURACY_FILE, RESULTS_FILE + FILES, NUM_CYCLES, CLASSIFIERS, DEGREES_SVM_POLY, GAMMAS_SVM_RBF
 source $CONFIG_FILE
 
+#----------------------------------------------
 function cool_progress_ind {
   chars=( "[ - ]" "[ \\ ]" "[ | ]" "[ / ]" )
   interval=1
   count=0
-
   echo -n "     "
   while true
   do
   pos=$(($count % 4))
-
   echo -en "\b\b\b\b\b${chars[$pos]}"
-
   count=$(($count + 1))
   sleep $interval
   done
 }
-
 function stop_progress_ind {
   exec 2>/dev/null
   kill $1
   echo -en "\n"
+}
+# Usage:
+#   cool_progress_ind &
+#   pid=$!
+#   trap "stop_progress_ind $pid; exit" INT TERM EXIT #If yadmt is interrupted, this will take care of killing progress bar
+#   long running task ....
+#   stop_progress_ind $pid
+#----------------------------------------------
+
+function transfer_controlNconfigFiles {
+  # Sanity check
+  while read server_address
+  do
+    if [ "$server_address" != ":"  ]; then
+      ssh $server_address
+      ssh $HOST_NAME
+      exit
+      exit
+    fi
+  done < $LOGIN_FILE
+
+  while read server_address
+  do
+    if [ "$server_address" != ":"  ]; then
+      if ! scp $CONFIG_FILE $server_address":"$CONFIG_FILE &> /dev/null
+      then
+        echo >&2 $PGM_NAME " - The machines (" $HOST_NAME "," $server_address  ") are not configure with passwordless ssh."
+        exit 1
+      fi
+      scp $CONTROL_FILE $server_address":"$CONTROL_FILE &> /dev/null
+    fi
+    # Create SERVERS from LOGIN_FILE 
+    if [ "$SERVERS" == "" ]; then
+      SERVERS=$server_address
+    else
+      SERVERS=$server_address","$SERVERS
+    fi
+  done < $LOGIN_FILE
+}
+
+function transfer_accuracyFile {
+  cp $ACCURACY_FILE $ACCURACY_FILE".temp"
+  while read server_address
+  do
+    if [ "$server_address" != ":"  ]; then
+      if ! scp  $server_address":"$ACCURACY_FILE $ACCURACY_FILE".temp1"
+      then
+        echo >&2 $PGM_NAME " - Couldnot transfer" $ACCURACY_FILE " from the machine" $server_address
+        exit 1
+      fi
+      cat $ACCURACY_FILE".temp1" >> $ACCURACY_FILE".temp"
+      rm $ACCURACY_FILE".temp1" &> /dev/null
+    fi
+  done < $LOGIN_FILE
+  mv $ACCURACY_FILE".temp" $ACCURACY_FILE
 }
 
 
@@ -294,47 +363,40 @@ if [ "$TASK" == "CLASSIFICATION" ]; then
   #RANDOM_SLEEP="sleep $((RANDOM*2/32767+1));"
   RANDOM_SLEEP=""
   RUN_CLASSIFIER_PATH=$YADMT_DIR"/runClassifier"
+  OUTPUT_FLAG=""
   if [ "$IS_WIZARD" == "TRUE" ]; then
-    echo -n "Running classification task. Please wait "
-    cool_progress_ind &
-    pid=$!
-    # If yadmt is interrupted, this will take care of killing progress bar
-    trap "stop_progress_ind $pid; exit" INT TERM EXIT
+    OUTPUT_FLAG="--eta"
+  fi
 
-    if [ "$EXPERIMENTAL_SETUP" == "1"  ]; then
-      rm -rf $YADMT_DIR"/data" /tmp/yadmt.lock/ $ACCURACY_FILE $RESULTS_FILE &> /dev/null
-      cat $CONTROL_FILE | parallel --max-args=1 --load 95% $RANDOM_SLEEP$RUN_CLASSIFIER_PATH' {};'
-    else
-      # first delete previous data folder
-      parallel --sshloginfile $LOGIN_FILE "rm -rf "$YADMT_DIR"/data /tmp/yadmt.lock/ $ACCURACY_FILE $RESULTS_FILE" &> /dev/null
-      # then start the program
-      cat $CONTROL_FILE | parallel --max-args=1 --sshloginfile $LOGIN_FILE --load 95% $RANDOM_SLEEP$RUN_CLASSIFIER_PATH' {};'
-      # delete after finishing the program
-      parallel --sshloginfile $LOGIN_FILE "rm -rf "$YADMT_DIR"/data /tmp/yadmt.lock/" &> /dev/null
-    fi
-
-    stop_progress_ind $pid
+  if [ "$EXPERIMENTAL_SETUP" == "1"  ]; then
+    rm -rf $YADMT_DIR"/data" /tmp/yadmt.lock/ $ACCURACY_FILE $RESULTS_FILE &> /dev/null
+    cat $CONTROL_FILE | parallel --eta --max-args=1 --load 95% $RANDOM_SLEEP$RUN_CLASSIFIER_PATH' {};'
   else
-      if [ "$EXPERIMENTAL_SETUP" == "1"  ]; then
-        rm -rf $YADMT_DIR"/data" /tmp/yadmt.lock/ $ACCURACY_FILE $RESULTS_FILE &> /dev/null
-        cat $CONTROL_FILE | parallel --max-args=1 --load 95% $RANDOM_SLEEP$RUN_CLASSIFIER_PATH' {}'
-      else
-        # first delete previous data folder
-        parallel --sshloginfile $LOGIN_FILE "rm -rf "$YADMT_DIR"/data /tmp/yadmt.lock/ $ACCURACY_FILE $RESULTS_FILE" &> /dev/null
-        # then start the program
-        cat $CONTROL_FILE | parallel --max-args=1 --sshloginfile $LOGIN_FILE --load 95% $RANDOM_SLEEP$RUN_CLASSIFIER_PATH' {}'
-        # delete after finishing the program
-        parallel --sshloginfile $LOGIN_FILE "rm -rf "$YADMT_DIR"/data /tmp/yadmt.lock/" &> /dev/null
-      fi
+    # first copy control and config files to remote machines
+    if [ "$IS_WIZARD" == "TRUE" ]; then
+      echo "Initializing the cluster. Please wait."
+    fi
+    transfer_controlNconfigFiles
+    # then, delete previous data folder
+    parallel --nonall "-S"$SERVERS "rm -rf "$YADMT_DIR"/data /tmp/yadmt.lock/ $ACCURACY_FILE $RESULTS_FILE" &> /dev/null
+    if [ "$IS_WIZARD" == "TRUE" ]; then
+      echo "Starting the classifier"
+    fi
+    # then start the program
+    cat $CONTROL_FILE | parallel $OUTPUT_FLAG --max-args=1 "-S"$SERVERS --load 95% $RANDOM_SLEEP$RUN_CLASSIFIER_PATH' {};'
+    if [ "$IS_WIZARD" == "TRUE" ]; then
+      echo "Merging the results."
+    fi
+    transfer_accuracyFile
+    # delete after finishing the program
+    if [ "$IS_WIZARD" == "TRUE" ]; then
+      echo "Now deleting the temporary files created on all the machines"
+    fi
+    parallel --nonall "-S"$SERVERS "rm -rf "$YADMT_DIR"/data /tmp/yadmt.lock/" &> /dev/null
+    if [ "$IS_WIZARD" == "TRUE" ]; then
+      echo "Done. Check" $ACCURACY_FILE "for final results."
+    fi
   fi
-
-  if [ "$IS_WIZARD" == "TRUE" ]; then
-    echo "Done with classification task."
-  fi
-
-  # Use --tag to debug
-  # TODO For Multiple machines:
-  # parallel --nonall --sshloginfile $LOGIN_FILE 'cat $ACCURACY_FILE' > $ACCURACY_FILE".final" 
 
 # Classification ends
 #----------------------------------------------
