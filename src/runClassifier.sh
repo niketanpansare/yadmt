@@ -9,12 +9,15 @@
 #  Created by Niketan Pansare
 
 # Has to be of format "configFile,inputFile,cycleNum,classifier,optional_params" without any spaces
-INPUT_CONFIGURATION=$1
 PGM_NAME=$0
 USER_HOME=$(eval echo ~${SUDO_USER})
 YADMT_DIR=$USER_HOME"/yadmt"
 LOCKDIR="/tmp/yadmt.lock"
 
+INPUT_CONFIGURATION=$1
+#ARGS="$@"
+#for INPUT_CONFIGURATION in "$ARGS"
+#do
 # set CONFIG_FILE, INPUT_FILE and CYCLE_NUM
 Array=(`echo $INPUT_CONFIGURATION | tr "," "\n"`)
 CONFIG_FILE="${Array[0]}"
@@ -72,7 +75,7 @@ function cleanup {
 #fi  
 }
 # Trap user interrupts
-trap "cleanup; exit" INT TERM EXIT ERR
+trap "cleanup" INT TERM EXIT ERR
 ###########################
 
 #Read variables: MAX_MEMORY_CLASSIFIER, ACCURACY_FILE, RESULTS_FILE, MASTER, EXPERIMENTAL_SETUP
@@ -187,7 +190,7 @@ if [ "$NUM_CLASSES" == "2" ]; then
     cat $TEMP_FILE1 >> $RESULTS_FILE
     sed '/^Reading model/d' $TEMP_FILE1 > $TEMP_FILE2
     sed '/^Precision/d' $TEMP_FILE2 > $TEMP_FILE1
-    sed "$SVM_2CLASS_PATTERN$CYCLE_NUM svm_linear 0 "$PARAM_NAME" \1/g" $TEMP_FILE1 >> $ACCURACY_FILE
+sed "$SVM_2CLASS_PATTERN$CYCLE_NUM svm_linear 0 "$PARAM_NAME" \1/g" $TEMP_FILE1 >> $ACCURACY_FILE
     release_lock
   elif [ "$CLASSIFIER" == "svm_poly" ]; then
     $YADMT_DIR"/svm_learn" -t 1 -d $DEGREE $TRAIN_FILE $MODEL_FILE > $TEMP_FILE1
@@ -198,7 +201,7 @@ if [ "$NUM_CLASSES" == "2" ]; then
     cat $TEMP_FILE1 >> $RESULTS_FILE
     sed '/^Reading model/d' $TEMP_FILE1 > $TEMP_FILE2
     sed '/^Precision/d' $TEMP_FILE2 > $TEMP_FILE1
-    sed "$SVM_2CLASS_PATTERN$CYCLE_NUM svm_poly "$DEGREE" "$PARAM_NAME" \1/g" $TEMP_FILE1 >> $ACCURACY_FILE
+sed "$SVM_2CLASS_PATTERN$CYCLE_NUM svm_poly "$DEGREE" "$PARAM_NAME" \1/g" $TEMP_FILE1 >> $ACCURACY_FILE
     release_lock
   elif [ "$CLASSIFIER" == "svm_rbf" ]; then
     $YADMT_DIR"/svm_learn" -t 2 -g $GAMMA $TRAIN_FILE $MODEL_FILE > $TEMP_FILE1
@@ -209,7 +212,7 @@ if [ "$NUM_CLASSES" == "2" ]; then
     cat $TEMP_FILE1 >> $RESULTS_FILE
     sed '/^Reading model/d' $TEMP_FILE1 > $TEMP_FILE2
     sed '/^Precision/d' $TEMP_FILE2 > $TEMP_FILE1
-    sed "$SVM_2CLASS_PATTERN$CYCLE_NUM svm_rbf "$GAMMA" "$PARAM_NAME" \1/g" $TEMP_FILE1 >> $ACCURACY_FILE
+sed "$SVM_2CLASS_PATTERN$CYCLE_NUM svm_rbf "$GAMMA" "$PARAM_NAME" \1/g" $TEMP_FILE1 >> $ACCURACY_FILE
     release_lock
   fi
   rm $TEMP_FILE1 $TEMP_FILE2 $MODEL_FILE $PRED_FILE &> /dev/null
@@ -229,7 +232,7 @@ else
     sed '/^Classifying test examples/d' $TEMP_FILE2 > $TEMP_FILE1
     sed '/^Runtime/d' $TEMP_FILE1 > $TEMP_FILE2
     sed '/^Average loss on test set/d' $TEMP_FILE2 > $TEMP_FILE1
-    sed "$SVM_NCLASS_PATTERN$CYCLE_NUM svm_linear 0 "$PARAM_NAME" \1/g" $TEMP_FILE1 >> $ACCURACY_FILE
+sed "$SVM_NCLASS_PATTERN$CYCLE_NUM svm_linear 0 "$PARAM_NAME" \1/g" $TEMP_FILE1 >> $ACCURACY_FILE
     release_lock
   elif [ "$CLASSIFIER" == "svm_poly" ]; then
     $YADMT_DIR"/svm_multiclass_learn" -c $TRADE_OFF -t 1 -d $DEGREE $TRAIN_FILE $MODEL_FILE > $TEMP_FILE1
@@ -244,7 +247,7 @@ else
     sed '/^Classifying test examples/d' $TEMP_FILE2 > $TEMP_FILE1
     sed '/^Runtime/d' $TEMP_FILE1 > $TEMP_FILE2
     sed '/^Average loss on test set/d' $TEMP_FILE2 > $TEMP_FILE1
-    sed "$SVM_NCLASS_PATTERN$CYCLE_NUM svm_poly "$DEGREE" "$PARAM_NAME" \1/g" $TEMP_FILE1 >> $ACCURACY_FILE
+sed "$SVM_NCLASS_PATTERN$CYCLE_NUM svm_poly "$DEGREE" "$PARAM_NAME" \1/g" $TEMP_FILE1 >> $ACCURACY_FILE
     release_lock
   elif [ "$CLASSIFIER" == "svm_rbf" ]; then
     $YADMT_DIR"/svm_multiclass_learn" -c $TRADE_OFF -t 2 -g $GAMMA $TRAIN_FILE $MODEL_FILE > $TEMP_FILE1
@@ -259,7 +262,7 @@ else
     sed '/^Classifying test examples/d' $TEMP_FILE2 > $TEMP_FILE1
     sed '/^Runtime/d' $TEMP_FILE1 > $TEMP_FILE2
     sed '/^Average loss on test set/d' $TEMP_FILE2 > $TEMP_FILE1
-    sed "$SVM_NCLASS_PATTERN$CYCLE_NUM svm_rbf "$GAMMA" "$PARAM_NAME" \1/g" $TEMP_FILE1 >> $ACCURACY_FILE
+sed "$SVM_NCLASS_PATTERN$CYCLE_NUM svm_rbf "$GAMMA" "$PARAM_NAME" \1/g" $TEMP_FILE1 >> $ACCURACY_FILE
     release_lock
   fi
   rm $TEMP_FILE1 $TEMP_FILE2 $MODEL_FILE $PRED_FILE &> /dev/null
@@ -296,7 +299,8 @@ if [ "$CLASSIFIER" == "naive_bayes" ]; then
     TAIL_NUM=$(($NUM_CLASSES+16))
     set -- $(cat $TEMP_FILE3 | tail -n $TAIL_NUM | head -n 1)
     # Example: now, $1="Correctly", $2="Classified", $3="Instances", $4="417", $5="79.1271"
-    echo $CYCLE_NUM "naive_bayes" "0" $PARAM_NAME $5 >> $ACCURACY_FILE
+echo $CYCLE_NUM "naive_bayes" "0" $PARAM_NAME $5 >> $ACCURACY_FILE
+
     release_lock
     rm $TEMP_FILE1 $TEMP_FILE2 $TEMP_FILE3 $TEMP_FILE1".arff" $TEMP_FILE2".arff"  &> /dev/null
   else
@@ -306,4 +310,6 @@ if [ "$CLASSIFIER" == "naive_bayes" ]; then
   fi
   
 fi
+
+#done
 
