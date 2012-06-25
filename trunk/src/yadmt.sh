@@ -279,18 +279,7 @@ function stop_progress_ind {
 #   stop_progress_ind $pid
 #----------------------------------------------
 
-function transfer_controlNconfigFiles {
-  # Sanity check
-  while read server_address
-  do
-    if [ "$server_address" != ":"  ]; then
-      ssh $server_address
-      ssh $HOST_NAME
-      exit
-      exit
-    fi
-  done < $LOGIN_FILE
-
+function transfer_configFile {
   while read server_address
   do
     if [ "$server_address" != ":"  ]; then
@@ -299,7 +288,6 @@ function transfer_controlNconfigFiles {
         echo >&2 $PGM_NAME " - The machines (" $HOST_NAME "," $server_address  ") are not configure with passwordless ssh."
         exit 1
       fi
-      scp $CONTROL_FILE $server_address":"$CONTROL_FILE &> /dev/null
     fi
     # Create SERVERS from LOGIN_FILE 
     if [ "$SERVERS" == "" ]; then
@@ -311,20 +299,31 @@ function transfer_controlNconfigFiles {
 }
 
 function transfer_accuracyFile {
-  cp $ACCURACY_FILE $ACCURACY_FILE".temp"
+  if [ -e $ACCURACY_FILE ]; then
+    mv $ACCURACY_FILE $ACCURACY_FILE".temp"
+  else
+    echo "" > $ACCURACY_FILE".temp"
+  fi
   while read server_address
   do
     if [ "$server_address" != ":"  ]; then
-      if ! scp  $server_address":"$ACCURACY_FILE $ACCURACY_FILE".temp1"
+      if ! scp  $server_address":"$ACCURACY_FILE $YADMT_DIR &> /dev/null
       then
         echo >&2 $PGM_NAME " - Couldnot transfer" $ACCURACY_FILE " from the machine" $server_address
         exit 1
       fi
-      cat $ACCURACY_FILE".temp1" >> $ACCURACY_FILE".temp"
-      rm $ACCURACY_FILE".temp1" &> /dev/null
+      if [ -e $ACCURACY_FILE ]; then
+        cat $ACCURACY_FILE >> $ACCURACY_FILE".temp"
+        rm $ACCURACY_FILE &> /dev/null
+      fi
     fi
   done < $LOGIN_FILE
-  mv $ACCURACY_FILE".temp" $ACCURACY_FILE
+  if [ -e $ACCURACY_FILE".temp" ]; then
+    mv $ACCURACY_FILE".temp" $ACCURACY_FILE
+  else
+    echo >&2 $PGM_NAME " No results obtained. Something must have gone wrong."
+    exit 1
+  fi
 }
 
 
@@ -372,25 +371,34 @@ if [ "$TASK" == "CLASSIFICATION" ]; then
     rm -rf $YADMT_DIR"/data" /tmp/yadmt.lock/ $ACCURACY_FILE $RESULTS_FILE &> /dev/null
     cat $CONTROL_FILE | parallel --eta --max-args=1 --load 95% $RANDOM_SLEEP$RUN_CLASSIFIER_PATH' {};'
   else
+    # 1. Initialize the cluster
     # first copy control and config files to remote machines
     if [ "$IS_WIZARD" == "TRUE" ]; then
-      echo "Initializing the cluster. Please wait."
+      echo "Initializing the cluster ..."
     fi
-    transfer_controlNconfigFiles
+    transfer_configFile
     # then, delete previous data folder
+    if [ -e $ACCURACY_FILE ]; then
+      rm $ACCURACY_FILE # Necessary when you don't include ":" in login file
+    fi
     parallel --nonall "-S"$SERVERS "rm -rf "$YADMT_DIR"/data /tmp/yadmt.lock/ $ACCURACY_FILE $RESULTS_FILE" &> /dev/null
+
+    # 2. Run classifier
     if [ "$IS_WIZARD" == "TRUE" ]; then
-      echo "Starting the classifier"
+      echo "Starting the classifier ..."
     fi
     # then start the program
-    cat $CONTROL_FILE | parallel $OUTPUT_FLAG --max-args=1 "-S"$SERVERS --load 95% $RANDOM_SLEEP$RUN_CLASSIFIER_PATH' {};'
+    cat $CONTROL_FILE | parallel $OUTPUT_FLAG --load 95% --max-args=1 "-S"$SERVERS $RANDOM_SLEEP$RUN_CLASSIFIER_PATH  
+
+    # 3. Merge result and delete the temp files
     if [ "$IS_WIZARD" == "TRUE" ]; then
-      echo "Merging the results."
+      echo ""
+      echo "Merging the results ..."
     fi
     transfer_accuracyFile
     # delete after finishing the program
     if [ "$IS_WIZARD" == "TRUE" ]; then
-      echo "Now deleting the temporary files created on all the machines"
+      echo "Now deleting the temporary files created on all the machines ..."
     fi
     parallel --nonall "-S"$SERVERS "rm -rf "$YADMT_DIR"/data /tmp/yadmt.lock/" &> /dev/null
     if [ "$IS_WIZARD" == "TRUE" ]; then
