@@ -173,7 +173,7 @@ if [ "$TASK1" == "1" ]; then
       exit 1
     fi
   done
-  
+
   echo -n "Enter the number of cycles you wish to run:"
   read NUM_CYCLES
   echo ""
@@ -184,6 +184,7 @@ if [ "$TASK1" == "1" ]; then
   FILES=$YADMT_DIR"/files.txt"
   PROGRAMX=$YADMT_DIR"/getParameterName"
   echo "Following are default values to run the classifiers:"
+  echo "- Compare the results of classifiers using non-parametric tests (Wilcoxon for 2-class and Friedman for n-class problems) and significance level of 95%"
   echo "- Store accuracy of classifiers in" $ACCURACY_FILE 
   echo "- Store all the output generated in" $RESULTS_FILE 
   echo "- Use" $FILES "to read the path of input files"
@@ -197,7 +198,30 @@ if [ "$TASK1" == "1" ]; then
     echo "RESULTS_FILE="$RESULTS_FILE >> $CONFIG_FILE
     echo "FILES="$FILES >> $CONFIG_FILE
     echo "PROGRAMX="$PROGRAMX >> $CONFIG_FILE
+    echo "STAT_TEST=1" >> $CONFIG_FILE
+    echo "CONF_LEVEL=0.95" >> $CONFIG_FILE
   else
+
+    # Statistical tests
+    echo -n "Do you also want to compare these classifiers ? (y/n):"
+    read ANS
+    echo ""
+    if [ "$ANS" == "y" ]; then
+      echo "We support following two families of statistical tests for comparing the classifiers."
+      echo "1. Non-parametric tests (Wilcoxon for 2-class and Friedman for n-class problems) \"Recommended\""
+      echo "2. Parametric tests (paired t-test for 2-class and Tukey for n-class) \"Only if you are sure about assumptions of these tests\""
+      echo -n "Enter your option (1,2):"
+      read STAT_TEST
+      echo ""
+
+      echo -n "Enter the confidence level of the interval (default: 0.95):"
+      read CONF_LEVEL
+      echo ""
+    else 
+      STAT_TEST="0"
+    fi
+    echo "STAT_TEST="$STAT_TEST >> $CONFIG_FILE
+    echo "CONF_LEVEL="$CONF_LEVEL >> $CONFIG_FILE
 
     echo -n "Enter the file name where you wish to store the accuracy (accuracy.txt):"
     read ACCURACY_FILE
@@ -402,7 +426,14 @@ if [ "$TASK" == "CLASSIFICATION" ]; then
     fi
     parallel --nonall "-S"$SERVERS "rm -rf "$YADMT_DIR"/data /tmp/yadmt.lock/" &> /dev/null
     if [ "$IS_WIZARD" == "TRUE" ]; then
-      echo "Done. Check" $ACCURACY_FILE "for final results."
+      if [ "$STAT_TEST" == "1" ]; then
+        # Non-parametric tests
+        # wilcox.test(x,y,conf.level=$CONF_LEVEL, paired=TRUE)
+      elif [ "$STAT_TEST" == "2" ]; then
+        # Parametric tests
+      else
+        echo "Done. Check" $ACCURACY_FILE "for final results."
+      fi
     fi
   fi
 
