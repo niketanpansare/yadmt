@@ -1,2 +1,3 @@
 #!/bin/bash
-echo parameter1
+# ./getParameterName fileName
+echo $1
