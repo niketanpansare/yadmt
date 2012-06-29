@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  yadmt configFile [TODO For Multiple machines: loginFile]
+#  yadmt (--wizard or configFile)
 #
 #  To use loginFile, you need to have password-less ssh
 #  ssh-copy-id -i ~/.ssh/id_rsa.pub username@remote-server
@@ -181,11 +181,13 @@ if [ "$TASK1" == "1" ]; then
 
   ACCURACY_FILE=$YADMT_DIR"/accuracy.txt"
   RESULTS_FILE=$YADMT_DIR"/result.txt"
+  OUTPUT_FILE=$YADMT_DIR"/output.html"
   FILES=$YADMT_DIR"/files.txt"
   PROGRAMX=$YADMT_DIR"/getParameterName"
   echo "Following are default values to run the classifiers:"
   echo "- Compare the results of classifiers using non-parametric tests (Wilcoxon for 2-class and Friedman for n-class problems) and significance level of 95%"
   echo "- Store accuracy of classifiers in" $ACCURACY_FILE 
+  echo "- Store results of statistical comparisons of classifiers in" $OUTPUT_FILE 
   echo "- Store all the output generated in" $RESULTS_FILE 
   echo "- Use" $FILES "to read the path of input files"
   echo "- Use default ProgramX" $PROGRAMX
@@ -195,6 +197,7 @@ if [ "$TASK1" == "1" ]; then
   echo ""
   if [ "$ANS" == "y" ]; then
     echo "ACCURACY_FILE="$ACCURACY_FILE >> $CONFIG_FILE
+    echo "OUTPUT_FILE="$OUTPUT_FILE >> $CONFIG_FILE
     echo "RESULTS_FILE="$RESULTS_FILE >> $CONFIG_FILE
     echo "FILES="$FILES >> $CONFIG_FILE
     echo "PROGRAMX="$PROGRAMX >> $CONFIG_FILE
@@ -214,14 +217,19 @@ if [ "$TASK1" == "1" ]; then
       read STAT_TEST
       echo ""
 
-      echo -n "Enter the confidence level of the interval (default: 0.95):"
+      echo -n "Enter the confidence level of the interval (0.95):"
       read CONF_LEVEL
+      echo ""
+  
+      echo -n "Enter the path of the file where you would like to store the results of statistical tests (output.html):"
+      read OUTPUT_FILE
       echo ""
     else 
       STAT_TEST="0"
     fi
     echo "STAT_TEST="$STAT_TEST >> $CONFIG_FILE
     echo "CONF_LEVEL="$CONF_LEVEL >> $CONFIG_FILE
+    echo "OUTPUT_FILE="$OUTPUT_FILE >> $CONFIG_FILE
 
     echo -n "Enter the file name where you wish to store the accuracy (accuracy.txt):"
     read ACCURACY_FILE
@@ -426,16 +434,16 @@ if [ "$TASK" == "CLASSIFICATION" ]; then
     fi
     parallel --nonall "-S"$SERVERS "rm -rf "$YADMT_DIR"/data /tmp/yadmt.lock/" &> /dev/null
     if [ "$IS_WIZARD" == "TRUE" ]; then
-      if [ "$STAT_TEST" == "1" ]; then
-        # Non-parametric tests
-        # wilcox.test(x,y,conf.level=$CONF_LEVEL, paired=TRUE)
-      elif [ "$STAT_TEST" == "2" ]; then
-        # Parametric tests
-      else
+      if [ "$STAT_TEST" == "0" ]; then
         echo "Done. Check" $ACCURACY_FILE "for final results."
+      else
+        echo "Now running statistical tests to compare the accuracies of the classifiers"
+        Rscript $YADMT_DIR"/StatisticalTests.R" $ACCURACY_FILE $OUTPUT_FILE $STAT_TEST $CONF_LEVEL &> /dev/null
+        echo "Done. Check" $ACCURACY_FILE "for accuracy and" $OUTPUT_FILE " for comparisons of the classifiers."
       fi
     fi
   fi
+
 
 # Classification ends
 #----------------------------------------------
