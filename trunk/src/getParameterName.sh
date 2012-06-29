@@ -1,6 +1,5 @@
 #!/bin/bash
 # ./getParameterName fileName
-FILE_FULL_PATH=$1
-FILE_NAME="${FILE_FULL_PATH##*/}"
-JUST_NAME="${FILE_NAME%%.*}"
+FILENAME_WITH_EXT=$(basename "$1")
+JUST_NAME="${FILENAME_WITH_EXT%.*}"
 echo $JUST_NAME 
