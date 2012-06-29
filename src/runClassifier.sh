@@ -190,7 +190,7 @@ if [ "$NUM_CLASSES" == "2" ]; then
     cat $TEMP_FILE1 >> $RESULTS_FILE
     sed '/^Reading model/d' $TEMP_FILE1 > $TEMP_FILE2
     sed '/^Precision/d' $TEMP_FILE2 > $TEMP_FILE1
-    sed $SVM_2CLASS_PATTERN"\1 svm_linear $CYCLE_NUM "$PARAM_NAME"/g" $TEMP_FILE1 >> $ACCURACY_FILE
+    sed "$SVM_2CLASS_PATTERN \1 svm_linear "$CYCLE_NUM" "$PARAM_NAME"/g" $TEMP_FILE1 >> $ACCURACY_FILE
     release_lock
   elif [ "$CLASSIFIER" == "svm_poly" ]; then
     $YADMT_DIR"/svm_learn" -t 1 -d $DEGREE $TRAIN_FILE $MODEL_FILE > $TEMP_FILE1
@@ -201,7 +201,7 @@ if [ "$NUM_CLASSES" == "2" ]; then
     cat $TEMP_FILE1 >> $RESULTS_FILE
     sed '/^Reading model/d' $TEMP_FILE1 > $TEMP_FILE2
     sed '/^Precision/d' $TEMP_FILE2 > $TEMP_FILE1
-    sed $SVM_2CLASS_PATTERN"\1 svm_poly_"$DEGREE" $CYCLE_NUM "$PARAM_NAME"/g" $TEMP_FILE1 >> $ACCURACY_FILE
+    sed "$SVM_2CLASS_PATTERN \1 svm_poly_"$DEGREE" "$CYCLE_NUM" "$PARAM_NAME"/g" $TEMP_FILE1 >> $ACCURACY_FILE
     release_lock
   elif [ "$CLASSIFIER" == "svm_rbf" ]; then
     $YADMT_DIR"/svm_learn" -t 2 -g $GAMMA $TRAIN_FILE $MODEL_FILE > $TEMP_FILE1
@@ -212,7 +212,7 @@ if [ "$NUM_CLASSES" == "2" ]; then
     cat $TEMP_FILE1 >> $RESULTS_FILE
     sed '/^Reading model/d' $TEMP_FILE1 > $TEMP_FILE2
     sed '/^Precision/d' $TEMP_FILE2 > $TEMP_FILE1
-    sed $SVM_2CLASS_PATTERN"\1 svm_rbf_"$GAMMA" $CYCLE_NUM "$PARAM_NAME"/g" $TEMP_FILE1 >> $ACCURACY_FILE
+    sed "$SVM_2CLASS_PATTERN \1 svm_rbf_"$GAMMA" "$CYCLE_NUM" "$PARAM_NAME"/g" $TEMP_FILE1 >> $ACCURACY_FILE
     release_lock
   fi
   rm $TEMP_FILE1 $TEMP_FILE2 $MODEL_FILE $PRED_FILE &> /dev/null
@@ -232,7 +232,7 @@ else
     sed '/^Classifying test examples/d' $TEMP_FILE2 > $TEMP_FILE1
     sed '/^Runtime/d' $TEMP_FILE1 > $TEMP_FILE2
     sed '/^Average loss on test set/d' $TEMP_FILE2 > $TEMP_FILE1
-    sed $SVM_NCLASS_PATTERN"\1 svm_linear $CYCLE_NUM "$PARAM_NAME"/g" $TEMP_FILE1 >> $ACCURACY_FILE
+    sed "$SVM_NCLASS_PATTERN \1 svm_linear "$CYCLE_NUM" "$PARAM_NAME"/g" $TEMP_FILE1 >> $ACCURACY_FILE
     release_lock
   elif [ "$CLASSIFIER" == "svm_poly" ]; then
     $YADMT_DIR"/svm_multiclass_learn" -c $TRADE_OFF -t 1 -d $DEGREE $TRAIN_FILE $MODEL_FILE > $TEMP_FILE1
@@ -247,7 +247,7 @@ else
     sed '/^Classifying test examples/d' $TEMP_FILE2 > $TEMP_FILE1
     sed '/^Runtime/d' $TEMP_FILE1 > $TEMP_FILE2
     sed '/^Average loss on test set/d' $TEMP_FILE2 > $TEMP_FILE1
-    sed $SVM_NCLASS_PATTERN"\1 svm_poly_"$DEGREE" $CYCLE_NUM "$PARAM_NAME"/g" $TEMP_FILE1 >> $ACCURACY_FILE
+    sed "$SVM_NCLASS_PATTERN \1 svm_poly_"$DEGREE" "$CYCLE_NUM" "$PARAM_NAME"/g" $TEMP_FILE1 >> $ACCURACY_FILE
     release_lock
   elif [ "$CLASSIFIER" == "svm_rbf" ]; then
     $YADMT_DIR"/svm_multiclass_learn" -c $TRADE_OFF -t 2 -g $GAMMA $TRAIN_FILE $MODEL_FILE > $TEMP_FILE1
@@ -262,7 +262,7 @@ else
     sed '/^Classifying test examples/d' $TEMP_FILE2 > $TEMP_FILE1
     sed '/^Runtime/d' $TEMP_FILE1 > $TEMP_FILE2
     sed '/^Average loss on test set/d' $TEMP_FILE2 > $TEMP_FILE1
-    sed $SVM_NCLASS_PATTERN"\1 svm_rbf_"$GAMMA" $CYCLE_NUM "$PARAM_NAME"/g" $TEMP_FILE1 >> $ACCURACY_FILE
+    sed "$SVM_NCLASS_PATTERN \1 svm_rbf_"$GAMMA" "$CYCLE_NUM" "$PARAM_NAME"/g" $TEMP_FILE1 >> $ACCURACY_FILE
     release_lock
   fi
   rm $TEMP_FILE1 $TEMP_FILE2 $MODEL_FILE $PRED_FILE &> /dev/null
