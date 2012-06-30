@@ -46,4 +46,13 @@ While using yadmt for classification, you would be interested in one of the foll
 For more details about these tests, see [http://jmlr.csail.mit.edu/papers/volume7/demsar06a/demsar06a.pdf Demsar's 2006 paper].
 
 == Known Issues ==
- # If the number of elements for a given class is too low as compared to others, it could be the case that for either test or training data, there would be no element from that class. In this case, the Weka classifiers (but not the SVMs) could fail.
+ # If the number of elements for a given class is too low as compared to others, it could be the case that for either test or training data, there would be no element from that class. In this case, the Weka classifiers (but not the SVMs) could fail. Following script helps sometime by randomizing the input:
+{{{
+cd ~/yadmt/
+for file in `cat files.txt`
+do
+  cp $file blah.temp
+  sort -R blah.temp > $file
+  rm blah.temp
+done
+}}}
