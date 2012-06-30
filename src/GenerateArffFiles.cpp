@@ -15,15 +15,23 @@ double GetValueAndFeatureNumber(char* inputString, int* outputFeatureNum, int li
 
 int GetNumFeaturesNClasses(const char* fileName, int* numClasses);
 
-// Usage: GenerateArffFiles input-file output-file
+// Usage: GenerateArffFiles input-file output-file numClasses numFeatures
 int main(int argc, char* argv[]) {
   string line;
   ifstream infile; ofstream outfile;
   
   // Read input arguments
-  ASSERT(argc == 3) << "Incorrect number of arguments" << DIE;
+  ASSERT(argc == 3 || argc == 5) << "Incorrect number of arguments" << DIE;
   int numClasses = 0;
-  int numFeatures = GetNumFeaturesNClasses(argv[1], &numClasses);  
+  int numFeatures = 0;
+  if(argc == 3) {
+    numFeatures = GetNumFeaturesNClasses(argv[1], &numClasses);  
+  }
+  else {
+    numClasses = atoi(argv[3]);
+    numFeatures = atoi(argv[4]);
+  }
+  
 	infile.open (argv[1]); outfile.open (argv[2]);
   ASSERT(numClasses > 1 && numFeatures > 0) << "Invalid arguments: {numClasses:" << numClasses << ", numFeatures:" << numFeatures << "}" << DIE;
   
