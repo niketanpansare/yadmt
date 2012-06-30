@@ -55,7 +55,7 @@ _yadmt_ ranks the classifiers for you by default by running [http://code.google.
 
 Results from Wilcoxon signed rank test: 
 <table style="border:1px solid black;">
-<tr> <th> Classifier </th><th> all_emp_cycle10_afterBurnIn_svm_theta </th><th> all_emp_cycle11_afterBurnIn_svm_theta </th></tr> 
+<tr> <th> Classifier </th><th> dataset1 </th><th> dataset2 </th></tr> 
 <tr> <td> svm_linear </td> <td> 38.53 <sup> 1 </sup></td> <td> 37.9566666666667 <sup> 1 </sup></td> </tr>
 <tr> <td> svm_poly_2 </td> <td> 83.2066666666667 <sup> 1 </sup></td> <td> 84.98 <sup> 1 </sup></td> </tr>
 </table>
