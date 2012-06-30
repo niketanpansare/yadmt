@@ -158,7 +158,7 @@ if [ "$TASK1" == "1" ]; then
       fi
     fi
 
-    if [ "$classifier" == "naive_bayes"]; then
+    if [ "$classifier" == "naive_bayes" ]; then
       # Note, even though default is sam as normal, there is a difference in accuracy as they use different classes
       echo -n "Enter the list of priors you want for naive_bayes (eg: default multinomial normal):"
       read PRIOR_NAIVE_BAYES
@@ -177,10 +177,6 @@ if [ "$TASK1" == "1" ]; then
     fi
   done
 
-  echo "yadmt let's you:"
-  echo "1. Compare performance of various classifiers and find the best classifier for each dataset."
-  echo "2. Compare performance of a classifier across dataset and find the ."
-
   echo -n "Enter the number of cycles you wish to run:"
   read NUM_CYCLES
   echo ""
@@ -192,7 +188,7 @@ if [ "$TASK1" == "1" ]; then
   FILES=$YADMT_DIR"/files.txt"
   PROGRAMX=$YADMT_DIR"/getParameterName"
   echo "Following are default values to run the classifiers:"
-  echo "- Compare the results of classifiers using non-parametric tests (Wilcoxon for 2-class and Friedman for n-class problems) and significance level of 95%"
+  echo "- Compare the results of classifiers using non-parametric tests (Wilcoxon for 2-classifiers and Friedman for n-classifiers) and significance level of 95%"
   echo "- Store accuracy of classifiers in" $ACCURACY_FILE 
   echo "- Store results of statistical comparisons of classifiers in" $OUTPUT_FILE 
   echo "- Store all the output generated in" $RESULTS_FILE 

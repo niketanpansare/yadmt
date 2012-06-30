@@ -282,14 +282,14 @@ else
 fi
 
 if [ "$SOFTWARE" == "WEKA" ]; then
-  if ! $YADMT_DIR"/GenerateArffFiles" $TRAIN_FILE $TEMP_FILE1".arff" > $TEMP_FILE3 2> $TEMP_FILE1
+  if ! $YADMT_DIR"/GenerateArffFiles" $TRAIN_FILE $TEMP_FILE1".arff" $NUM_CLASSES $NUM_FEATURES > $TEMP_FILE3 2> $TEMP_FILE1
   then
     DETAIL_ERROR=`cat $TEMP_FILE1` # Print for debugging
     echo >&2 $PGM_NAME " - Error while generating arff files."
     rm $TEMP_FILE1 $TEMP_FILE2 $TEMP_FILE3 $TEMP_FILE1".arff" $TEMP_FILE2".arff" &> /dev/null
     exit 1
   fi
-  if ! $YADMT_DIR"/GenerateArffFiles" $TEST_FILE $TEMP_FILE2".arff" >> $TEMP_FILE3 2> $TEMP_FILE1
+  if ! $YADMT_DIR"/GenerateArffFiles" $TEST_FILE $TEMP_FILE2".arff" $NUM_CLASSES $NUM_FEATURES >> $TEMP_FILE3 2> $TEMP_FILE1
   then
     DETAIL_ERROR=`cat $TEMP_FILE1` # Print for debugging
     echo >&2 $PGM_NAME " - Error while generating arff files."
