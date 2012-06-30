@@ -36,4 +36,4 @@ While using yadmt for classification, you would be interested in one of the foll
 == How to find best classifier ==
 
 == Known Issues ==
- # If the number of elements for a given class is too low as compared to others, it could be the case that for either test or training data, there would be no element from that class. In this case, the classification could fail. 
+ # If the number of elements for a given class is too low as compared to others, it could be the case that for either test or training data, there would be no element from that class. In this case, the Weka classifiers (but not SVMs) could fail.
