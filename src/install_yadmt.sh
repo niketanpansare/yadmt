@@ -22,6 +22,7 @@ chmod +x *.sh
 cp yadmt.sh $YADMT_DIR"/yadmt"
 cp getParameterName.sh $YADMT_DIR"/getParameterName"
 cp runClassifier.sh $YADMT_DIR"/runClassifier" 
+cp StatisticalTests.R $YADMT_DIR
 g++ GenerateArffFiles.cpp Assert.cpp -o $YADMT_DIR"/GenerateArffFiles"
 g++ GetMetaInformationOfInputSVM.cpp Assert.cpp -o $YADMT_DIR"/GetMetaInformationOfInputSVM"
 
