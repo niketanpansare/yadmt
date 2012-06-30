@@ -37,8 +37,8 @@ While using yadmt for classification, you would be interested in one of the foll
 
 
 == Supported classifiers: ==
- # SVMLight, SVMMulticlass: linear, polynomial and RBF SVMs.
- # Weka: Naive Bayes (multinomial/normal prior),  C 4.5 decision tree, Multi-response linear regression,  Logistic regression and Random forest.
+ # SVMLight, SVMMulticlass: linear, polynomial and RBF [http://en.wikipedia.org/wiki/Support_vector_machine SVMs].
+ # Weka: [http://en.wikipedia.org/wiki/Naive_Bayes_classifier Naive Bayes] (multinomial/normal prior),  [http://en.wikipedia.org/wiki/C4.5_algorithm C 4.5 decision tree], Multi-response linear regression,  [http://en.wikipedia.org/wiki/Logistic_regression Logistic regression] and [http://en.wikipedia.org/wiki/Random_forest Random forest].
 
 == Supported statistical tests to compare the classifiers: ==
  # Non-parametric tests (Wilcoxon for 2-classifiers and Friedman for n-classifiers)
