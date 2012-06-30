@@ -32,6 +32,8 @@ While using yadmt for classification, you would be interested in one of the foll
    * As a performance hack, you can randomly partition the dataset into smaller datasets and ask question 2. However, a word of caution, some classifiers have weird property that they might work well on smaller datasets and might not work so well on larger dataset (or at least there is no guarantee that they will). We suggest using [http://mahout.apache.org/ Apache Mahout] or writing your own Hadoop-based or disk-based classifier.
  # Given a newly developed classifier ("control classifier"), test its performance across traditional classifiers.
    * Feature under development.
+ # Ask above questions by for different performance measures like ROC, precision/recall, etc
+   * Feature under development.
  
 == Input format: ==
 The input file has to be of format suggested by [http://svmlight.joachims.org/ SVMLight]:
