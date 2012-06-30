@@ -151,8 +151,7 @@ if [ "$TASK1" == "1" ]; then
   SOFTWARE=""
   for classifier in $CLASSIFIERS
   do
-    if [[ "$classifier" == "naive_bayes" || "$classifier" == "c45_decision_tree" || "$classifier" == "linear_regression" || "$classifier" == "logistic_regression" || "$classifier" == "random_forest"  ]]
-    then
+    if [ "$classifier" == "naive_bayes" -o "$classifier" == "c45_decision_tree" -o "$classifier" == "linear_regression" -o "$classifier" == "logistic_regression" -o "$classifier" == "random_forest"  ]; then
       if [ "$SOFTWARE" == "" ]; then
         SOFTWARE="WEKA"
         echo "SOFTWARE=WEKA" >> $CONFIG_FILE
