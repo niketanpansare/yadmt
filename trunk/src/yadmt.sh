@@ -8,6 +8,8 @@
 #  Created by Niketan Pansare
 
 # Has to be of format "configFile,inputFile,cycleNum,classifier,optional_params" without any spaces
+COMPARE_DATASETS=0 # Set this to 1 if you want to compare datasets. Caution: Only for advanced users.
+
 PGM_NAME=$0
 IS_WIZARD="FALSE"
 USER_HOME=$(eval echo ~${SUDO_USER})
@@ -115,12 +117,13 @@ else
 fi
 
 
-echo "yadmt supports following tasks:"
-echo "1. Classification"
-echo "2. Topic Modelling (not supported yet)"
-echo -n "Which task do you wish to perform (1,2):"
-read TASK1
-echo ""
+#echo "yadmt supports following tasks:"
+#echo "1. Classification"
+#echo "2. Topic Modelling (not supported yet)"
+#echo -n "Which task do you wish to perform (1,2):"
+#read TASK1
+#echo ""
+TASK1="1"
 
 CONFIG_FILE=$YADMT_DIR"/config.txt"
 CONTROL_FILE=$YADMT_DIR"/controlFile.txt"
@@ -130,6 +133,7 @@ echo "EXPERIMENTAL_SETUP="$EXPERIMENTAL_SETUP > $CONFIG_FILE
 echo "MASTER="$USER_NAME"@"$HOST_NAME >> $CONFIG_FILE
 # This means when disk space on home reaches 95%, don't keep any more file in disk cache (i.e. ~/yadmt/data)
 echo "MAXIMUM_DISK_SPACE_TO_USE=95" >> $CONFIG_FILE
+echo "MAX_MEMORY_CLASSIFIER=1024" >> $CONFIG_FILE
 
 if [ "$TASK1" == "1" ]; then
   # Classification
@@ -138,26 +142,29 @@ if [ "$TASK1" == "1" ]; then
   echo "TASK="$TASK >> $CONFIG_FILE  
 
   echo "yadmt supports following classifiers:"
-  echo "svm_linear svm_poly svm_rbf naive_bayes"
-  echo "(Hint: An example for below input is: svm_linear naive_bayes)" 
+  echo "svm_linear svm_poly svm_rbf naive_bayes c45_decision_tree linear_regression logistic_regression random_forest"
   echo -n "Enter the list of classifiers separated by space you wish to run:"
   read CLASSIFIERS
   echo ""
   echo "CLASSIFIERS=\""$CLASSIFIERS"\"" >> $CONFIG_FILE
 
-  
+  SOFTWARE=""
   for classifier in $CLASSIFIERS
   do
-    if [ "$classifier" == "naive_bayes" ]; then
-      echo "Classifiers such as Weka may require large amount of memory depending on the input size."
-      echo -n "Specify the amount of maximum memory in MB that a classifier can use (eg: 300, 1000):"
-      read MAX_MEMORY_CLASSIFIER
+    if [[ "$classifier" == "naive_bayes" || "$classifier" == "c45_decision_tree" || "$classifier" == "linear_regression" || "$classifier" == "logistic_regression" || "$classifier" == "random_forest"  ]]
+    then
+      if [ "$SOFTWARE" == "" ]; then
+        SOFTWARE="WEKA"
+        echo "SOFTWARE=WEKA" >> $CONFIG_FILE
+      fi
+    fi
+
+    if [ "$classifier" == "naive_bayes"]; then
+      # Note, even though default is sam as normal, there is a difference in accuracy as they use different classes
+      echo -n "Enter the list of priors you want for naive_bayes (eg: default multinomial normal):"
+      read PRIOR_NAIVE_BAYES
       echo ""
-      echo "MAX_MEMORY_CLASSIFIER="$MAX_MEMORY_CLASSIFIER >> $CONFIG_FILE
-      
-    elif [ "$classifier" == "svm_linear" ]; then 
-      # Do nothing
-      echo -n ""
+      echo "PRIOR_NAIVE_BAYES=\""$PRIOR_NAIVE_BAYES"\"" >> $CONFIG_FILE
     elif [ "$classifier" == "svm_poly" ]; then 
       echo -n "Enter the list of degree separated by space you wish to run for svm_poly (eg: 2 3 4):"
       read DEGREES_SVM_POLY
@@ -168,11 +175,12 @@ if [ "$TASK1" == "1" ]; then
       read GAMMAS_SVM_RBF
       echo ""
       echo "GAMMAS_SVM_RBF=\""$GAMMAS_SVM_RBF"\"" >> $CONFIG_FILE
-    else
-      echo >&2 $PGM_NAME " - Incorrect classifier:" classifier
-      exit 1
     fi
   done
+
+  echo "yadmt let's you:"
+  echo "1. Compare performance of various classifiers and find the best classifier for each dataset."
+  echo "2. Compare performance of a classifier across dataset and find the ."
 
   echo -n "Enter the number of cycles you wish to run:"
   read NUM_CYCLES
@@ -381,6 +389,12 @@ if [ "$TASK" == "CLASSIFICATION" ]; then
             OUTPUT_STR=$CONFIG_FILE","$file","$cycle","$classifier","$gamma
             echo $OUTPUT_STR >> $CONTROL_FILE
           done
+        elif [ "$classifier" == "naive_bayes" ]; then
+          for prior in $PRIOR_NAIVE_BAYES
+          do
+            OUTPUT_STR=$CONFIG_FILE","$file","$cycle","$classifier","$prior
+            echo $OUTPUT_STR >> $CONTROL_FILE
+          done
         else
           OUTPUT_STR=$CONFIG_FILE","$file","$cycle","$classifier
           echo $OUTPUT_STR >> $CONTROL_FILE
@@ -433,14 +447,22 @@ if [ "$TASK" == "CLASSIFICATION" ]; then
       echo "Now deleting the temporary files created on all the machines ..."
     fi
     parallel --nonall "-S"$SERVERS "rm -rf "$YADMT_DIR"/data /tmp/yadmt.lock/" &> /dev/null
-    if [ "$IS_WIZARD" == "TRUE" ]; then
-      if [ "$STAT_TEST" == "0" ]; then
-        echo "Done. Check" $ACCURACY_FILE "for final results."
-      else
-        echo "Now running statistical tests to compare the accuracies of the classifiers"
-        Rscript $YADMT_DIR"/StatisticalTests.R" $ACCURACY_FILE $OUTPUT_FILE $STAT_TEST $CONF_LEVEL &> /dev/null
-        echo "Done. Check" $ACCURACY_FILE "for accuracy and" $OUTPUT_FILE " for comparisons of the classifiers."
-      fi
+  fi
+
+  if [ "$IS_WIZARD" == "TRUE" ]; then
+    NUM_LINES_CONTROL_FILE=`cat $CONTROL_FILE | wc -l`
+    NUM_LINES_ACCURACY_FILE=`cat $ACCURACY_FILE | wc -l`
+    if [ "$NUM_LINES_CONTROL_FILE" != "$NUM_LINES_ACCURACY_FILE" ]; then
+      echo >&2 $PGM_NAME " Some of the jobs couldn't finish or returned with an error. The results of finished jobs is available in the accuracy file."
+      exit 1
+    fi
+
+    if [ "$STAT_TEST" == "0" ]; then
+      echo "Done. Check" $ACCURACY_FILE "for final results."
+    else
+      echo "Now running statistical tests to compare the accuracies of the classifiers"
+      Rscript $YADMT_DIR"/StatisticalTests.R" $ACCURACY_FILE $OUTPUT_FILE $STAT_TEST $CONF_LEVEL $COMPARE_DATASETS &> /dev/null
+      echo "Done. Check" $ACCURACY_FILE "for accuracy and" $OUTPUT_FILE " for comparisons of the classifiers."
     fi
   fi
 

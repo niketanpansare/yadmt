@@ -1,14 +1,16 @@
 #!/bin/bash
 
-if ! java -version &> /dev/null
-then
-  echo "Installing Java"
-  sudo apt-get install openjdk-7-jdk
-fi
-# install g++
 sudo apt-get update
+
+# install g++
 sudo apt-get install build-essential
+# install unzip for weka
 sudo apt-get install unzip
+# install R
+sudo apt-get install r-base
+# install java 
+sudo apt-get install openjdk-7-jdk # or sun-java6-jdk
+
 sudo apt-get update
 
 USER_HOME=$(eval echo ~${SUDO_USER})
