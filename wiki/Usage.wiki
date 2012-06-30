@@ -35,5 +35,10 @@ While using yadmt for classification, you would be interested in one of the foll
  
 == How to find best classifier ==
 
+
+== Supported classifiers: ==
+ # SVMLight, SVMMulticlass: linear, polynomial and RBF SVMs.
+ # Weka: Naive Bayes (multinomial/normal prior),  C 4.5 decision tree, Multi-response linear regression,  Logistic regression and Random forest.
+
 == Known Issues ==
  # If the number of elements for a given class is too low as compared to others, it could be the case that for either test or training data, there would be no element from that class. In this case, the Weka classifiers (but not the SVMs) could fail.
