@@ -38,6 +38,13 @@ elif [ "$CLASSIFIER" == "svm_rbf" ]; then
     echo >&2 $PGM_NAME " - Expected gamma for svm_rbf"
     exit 1
   fi
+elif [ "$CLASSIFIER" == "naive_bayes" ]; then
+  if [ "${#Array[@]}" == "5" ]; then
+    PRIOR="${Array[4]}"
+  else
+    echo >&2 $PGM_NAME " - Expected prior for naive_bayes"
+    exit 1
+  fi
 fi
 
 ###########################
@@ -130,7 +137,7 @@ VAL_ONE="1"
 
 # For weka, maximum size of memory in MB
 if [ -z "${MAX_MEMORY_CLASSIFIER}" ]; then
-  MAX_MEMORY_CLASSIFIER=1000
+  MAX_MEMORY_CLASSIFIER=1024 # 1 GB of maximum memory for weka
 fi
 
 ###########################
@@ -171,12 +178,42 @@ then
   exit 1
 fi
 
-PARAM_NAME=`$PROGRAMX $RANDOMIZED_INPUT_FILE`
+PARAM_NAME=`$PROGRAMX $INPUT_FILE`
 
 ###########################
 
-SVM_2CLASS_PATTERN='s/Accuracy on test set: \([0-9]*.[0-9]*\)% ([0-9]* correct, [0-9]* incorrect, [0-9]* total)\.*/'
-SVM_NCLASS_PATTERN='s/Zero\/one-error on test set: \([0-9]*.[0-9]*\)% ([0-9]* correct, [0-9]* incorrect, [0-9]* total)\.*/'
+
+# Assumes data in $TEMP_FILE1
+function getSVMAccuracy {
+  # Zero/one-error on test set: 43.73% (296 correct, 230 incorrect, 526 total)
+  # Accuracy on test set: 43.73% (296 correct, 230 incorrect, 526 total)
+  set -- $(cat $TEMP_FILE1 | tail -n 1)
+  if [ "$4" == "set:" ]; then
+    local ACCURACY_WITH_PERCENT=$5
+    local ACCURACY=`echo "${ACCURACY_WITH_PERCENT%?}"`
+    echo $ACCURACY
+  else
+    echo "-1"
+  fi
+}
+
+function getWekaAccuracy {
+  local NUM_LINES_TEMP=`cat $TEMP_FILE1 | wc -l`
+  DONE_ACCURACY="FALSE"
+  for i in `seq 1 $NUM_LINES_TEMP`
+  do
+    set -- $(cat $TEMP_FILE1 | head -n $i | tail -n 1)
+    # Correctly Classified Instances         367               61.1667 %
+    if [ "$1" == "Correctly" ]; then
+      echo $5
+      DONE_ACCURACY="TRUE"
+      break
+    fi
+  done
+  if [ "$DONE_ACCURACY" == "FALSE" ]; then
+    echo "-1"
+  fi
+}
 
 
 if [ "$NUM_CLASSES" == "2" ]; then
@@ -188,9 +225,7 @@ if [ "$NUM_CLASSES" == "2" ]; then
     echo "" >> $RESULTS_FILE
     echo "svm_linear: Results for input file:" $INPUT_FILE "cycle:" $CYCLE_NUM "parameter:" $PARAM_NAME >> $RESULTS_FILE
     cat $TEMP_FILE1 >> $RESULTS_FILE
-    sed '/^Reading model/d' $TEMP_FILE1 > $TEMP_FILE2
-    sed '/^Precision/d' $TEMP_FILE2 > $TEMP_FILE1
-    sed $SVM_2CLASS_PATTERN' \1 svm_linear '$CYCLE_NUM" "$PARAM_NAME'/g' $TEMP_FILE1 >> $ACCURACY_FILE
+    echo $(getSVMAccuracy) "svm_linear" $CYCLE_NUM $PARAM_NAME >> $ACCURACY_FILE
     release_lock
   elif [ "$CLASSIFIER" == "svm_poly" ]; then
     $YADMT_DIR"/svm_learn" -t 1 -d $DEGREE $TRAIN_FILE $MODEL_FILE > $TEMP_FILE1
@@ -199,9 +234,7 @@ if [ "$NUM_CLASSES" == "2" ]; then
     echo "" >> $RESULTS_FILE
     echo "svm_poly: Results for input file:" $INPUT_FILE "cycle:" $CYCLE_NUM "parameter:" $PARAM_NAME "DEGREE:" $DEGREE >> $RESULTS_FILE
     cat $TEMP_FILE1 >> $RESULTS_FILE
-    sed '/^Reading model/d' $TEMP_FILE1 > $TEMP_FILE2
-    sed '/^Precision/d' $TEMP_FILE2 > $TEMP_FILE1
-    sed $SVM_2CLASS_PATTERN' \1 svm_poly_'$DEGREE" "$CYCLE_NUM" "$PARAM_NAME'/g' $TEMP_FILE1 >> $ACCURACY_FILE
+    echo $(getSVMAccuracy) "svm_poly_"$DEGREE $CYCLE_NUM $PARAM_NAME >> $ACCURACY_FILE
     release_lock
   elif [ "$CLASSIFIER" == "svm_rbf" ]; then
     $YADMT_DIR"/svm_learn" -t 2 -g $GAMMA $TRAIN_FILE $MODEL_FILE > $TEMP_FILE1
@@ -210,9 +243,7 @@ if [ "$NUM_CLASSES" == "2" ]; then
     echo "" >> $RESULTS_FILE
     echo "svm_rbf: Results for input file:" $INPUT_FILE "cycle:" $CYCLE_NUM "parameter:" $PARAM_NAME "GAMMA:" $GAMMA >> $RESULTS_FILE
     cat $TEMP_FILE1 >> $RESULTS_FILE
-    sed '/^Reading model/d' $TEMP_FILE1 > $TEMP_FILE2
-    sed '/^Precision/d' $TEMP_FILE2 > $TEMP_FILE1
-    sed $SVM_2CLASS_PATTERN' \1 svm_rbf_'$GAMMA" "$CYCLE_NUM" "$PARAM_NAME'/g' $TEMP_FILE1 >> $ACCURACY_FILE
+    echo $(getSVMAccuracy) "svm_rbf_"$GAMMA $CYCLE_NUM $PARAM_NAME >> $ACCURACY_FILE
     release_lock
   fi
   rm $TEMP_FILE1 $TEMP_FILE2 $MODEL_FILE $PRED_FILE &> /dev/null
@@ -226,13 +257,7 @@ else
     echo "" >> $RESULTS_FILE
     echo "svm_linear: (multi-class) Results for input file:" $INPUT_FILE "cycle:" $CYCLE_NUM "parameter:" $PARAM_NAME >> $RESULTS_FILE
     cat $TEMP_FILE1 >> $RESULTS_FILE
-    sed '/^Reading model/d' $TEMP_FILE1 > $TEMP_FILE2
-    sed '/^Precision/d' $TEMP_FILE2 > $TEMP_FILE1
-    sed '/^Reading test examples/d' $TEMP_FILE1 > $TEMP_FILE2
-    sed '/^Classifying test examples/d' $TEMP_FILE2 > $TEMP_FILE1
-    sed '/^Runtime/d' $TEMP_FILE1 > $TEMP_FILE2
-    sed '/^Average loss on test set/d' $TEMP_FILE2 > $TEMP_FILE1
-    sed $SVM_NCLASS_PATTERN' \1 svm_linear '$CYCLE_NUM" "$PARAM_NAME'/g' $TEMP_FILE1 >> $ACCURACY_FILE
+    echo $(getSVMAccuracy) "svm_linear" $CYCLE_NUM $PARAM_NAME >> $ACCURACY_FILE
     release_lock
   elif [ "$CLASSIFIER" == "svm_poly" ]; then
     $YADMT_DIR"/svm_multiclass_learn" -c $TRADE_OFF -t 1 -d $DEGREE $TRAIN_FILE $MODEL_FILE > $TEMP_FILE1
@@ -241,34 +266,22 @@ else
     echo "" >> $RESULTS_FILE
     echo "svm_poly: (multi-class) Results for input file:" $INPUT_FILE "cycle:" $CYCLE_NUM "parameter:" $PARAM_NAME "DEGREE:" $DEGREE >> $RESULTS_FILE
     cat $TEMP_FILE1 >> $RESULTS_FILE
-    sed '/^Reading model/d' $TEMP_FILE1 > $TEMP_FILE2
-    sed '/^Precision/d' $TEMP_FILE2 > $TEMP_FILE1
-    sed '/^Reading test examples/d' $TEMP_FILE1 > $TEMP_FILE2
-    sed '/^Classifying test examples/d' $TEMP_FILE2 > $TEMP_FILE1
-    sed '/^Runtime/d' $TEMP_FILE1 > $TEMP_FILE2
-    sed '/^Average loss on test set/d' $TEMP_FILE2 > $TEMP_FILE1
-    sed $SVM_NCLASS_PATTERN' \1 svm_poly_'$DEGREE" "$CYCLE_NUM" "$PARAM_NAME'/g' $TEMP_FILE1 >> $ACCURACY_FILE
+    echo $(getSVMAccuracy) "svm_poly_"$DEGREE $CYCLE_NUM $PARAM_NAME >> $ACCURACY_FILE
     release_lock
   elif [ "$CLASSIFIER" == "svm_rbf" ]; then
     $YADMT_DIR"/svm_multiclass_learn" -c $TRADE_OFF -t 2 -g $GAMMA $TRAIN_FILE $MODEL_FILE > $TEMP_FILE1
     $YADMT_DIR"/svm_multiclass_classify" -v 1 $TEST_FILE $MODEL_FILE $PRED_FILE > $TEMP_FILE1
     acquire_lock
     echo "" >> $RESULTS_FILE
-    echo "svm_rbf: (multi-class) Results for input file:" $INPUT_FILE "cycle:" $CYCLE_NUM "parameter:" $PARAM_NAME "DEGREE:" $DEGREE >> $RESULTS_FILE
+    echo "svm_rbf: (multi-class) Results for input file:" $INPUT_FILE "cycle:" $CYCLE_NUM "parameter:" $PARAM_NAME "GAMMA:" $GAMMA >> $RESULTS_FILE
     cat $TEMP_FILE1 >> $RESULTS_FILE
-    sed '/^Reading model/d' $TEMP_FILE1 > $TEMP_FILE2
-    sed '/^Precision/d' $TEMP_FILE2 > $TEMP_FILE1
-    sed '/^Reading test examples/d' $TEMP_FILE1 > $TEMP_FILE2
-    sed '/^Classifying test examples/d' $TEMP_FILE2 > $TEMP_FILE1
-    sed '/^Runtime/d' $TEMP_FILE1 > $TEMP_FILE2
-    sed '/^Average loss on test set/d' $TEMP_FILE2 > $TEMP_FILE1
-    sed $SVM_NCLASS_PATTERN' \1 svm_rbf_'$GAMMA" "$CYCLE_NUM" "$PARAM_NAME'/g' $TEMP_FILE1 >> $ACCURACY_FILE
+    echo $(getSVMAccuracy) "svm_rbf_"$GAMMA $CYCLE_NUM $PARAM_NAME >> $ACCURACY_FILE
     release_lock
   fi
   rm $TEMP_FILE1 $TEMP_FILE2 $MODEL_FILE $PRED_FILE &> /dev/null
 fi
 
-if [ "$CLASSIFIER" == "naive_bayes" ]; then
+if [ "$SOFTWARE" == "WEKA" ]; then
   if ! $YADMT_DIR"/GenerateArffFiles" $TRAIN_FILE $TEMP_FILE1".arff" > $TEMP_FILE3 2> $TEMP_FILE1
   then
     DETAIL_ERROR=`cat $TEMP_FILE1` # Print for debugging
@@ -284,22 +297,41 @@ if [ "$CLASSIFIER" == "naive_bayes" ]; then
     exit 1
   fi
   TEMP_FILE3_DATA=`cat $TEMP_FILE3`
+
+  if [ "$CLASSIFIER" == "naive_bayes" ]; then
+    if [ "$PRIOR" == "multinomial" ]; then
+      WEKA_CLASS="weka.classifiers.bayes.NaiveBayesMultinomial"
+    elif [ "$PRIOR" == "normal" ]; then
+      WEKA_CLASS="weka.classifiers.bayes.NaiveBayesSimple"
+    else
+      # For kernel estimation, enable -K
+      WEKA_CLASS="weka.classifiers.bayes.NaiveBayes"
+    fi
+  elif [ "$CLASSIFIER" == "c45_decision_tree" ]; then
+    WEKA_CLASS="weka.classifiers.trees.J48"
+  elif [ "$CLASSIFIER" == "linear_regression" ]; then
+    WEKA_CLASS="weka.classifiers.meta.ClassificationViaRegression -W weka.classifiers.functions.LinearRegression"
+  elif [ "$CLASSIFIER" == "logistic_regression" ]; then
+    WEKA_CLASS="weka.classifiers.functions.Logistic"
+  elif [ "$CLASSIFIER" == "random_forest" ]; then
+    WEKA_CLASS="weka.classifiers.trees.RandomForest"
+  fi
+
   if [ "$TEMP_FILE3_DATA" == "" ]; then
-    if ! java "-Xmx"$MAX_MEMORY_CLASSIFIER"m" -cp $YADMT_DIR"/weka.jar" weka.classifiers.bayes.NaiveBayes -t $TEMP_FILE1".arff" -T $TEMP_FILE2".arff" > $TEMP_FILE3 2>>  $RESULTS_FILE
+    if ! java "-Xmx"$MAX_MEMORY_CLASSIFIER"m" -cp $YADMT_DIR"/weka.jar" $WEKA_CLASS -t $TEMP_FILE1".arff" -T $TEMP_FILE2".arff" > $TEMP_FILE3 2>>  $RESULTS_FILE
     then
-      echo >&2 $PGM_NAME " - Error while executing weka naive bayes (See " $RESULTS_FILE " for detailed description of error).\n"
+      echo >&2 $PGM_NAME " - Error while executing weka "$CLASSIFIER" (See " $RESULTS_FILE " for detailed description of error).\n"
       rm $TEMP_FILE1 $TEMP_FILE2 $TEMP_FILE3 $TEMP_FILE1".arff" $TEMP_FILE2".arff" &> /dev/null
       exit 1
     fi
     acquire_lock
     echo "" >> $RESULTS_FILE
-    echo "naive_bayes: Results for input file:" $INPUT_FILE "cycle:" $CYCLE_NUM "parameter:" $PARAM_NAME >> $RESULTS_FILE
+    echo $CLASSIFIER": Results for input file:" $INPUT_FILE "cycle:" $CYCLE_NUM "parameter:" $PARAM_NAME >> $RESULTS_FILE
     cat $TEMP_FILE3 >> $RESULTS_FILE
     # Note the positional parameters are unset, so don't use $PGM_NAME, $1, .. after this
     TAIL_NUM=$(($NUM_CLASSES+16))
-    set -- $(cat $TEMP_FILE3 | tail -n $TAIL_NUM | head -n 1)
-    # Example: now, $1="Correctly", $2="Classified", $3="Instances", $4="417", $5="79.1271"
-    echo $5 "naive_bayes" $CYCLE_NUM $PARAM_NAME >> $ACCURACY_FILE
+    cat $TEMP_FILE3 | tail -n $TAIL_NUM | head -n 10 > $TEMP_FILE1
+    echo $(getWekaAccuracy) $CLASSIFIER $CYCLE_NUM $PARAM_NAME >> $ACCURACY_FILE
     release_lock
     rm $TEMP_FILE1 $TEMP_FILE2 $TEMP_FILE3 $TEMP_FILE1".arff" $TEMP_FILE2".arff"  &> /dev/null
   else

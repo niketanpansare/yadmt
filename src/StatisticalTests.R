@@ -1,17 +1,29 @@
 #!/bin/Rscript
-# Rscript StatisticalTests.R  accuracy.txt output.html stat_test significanceLevel
+# Rscript StatisticalTests.R  accuracy.txt output.html stat_test significanceLevel COMPARE_DATASETS
 # where third argument (stat_test) suggests type of test: 1- non-parametric and 2 - parametric
-# significanceLevel=0.95 
+# significanceLevel=0.95, and COMPARE_DATASETS=0
 
+is.installed <- function(mypkg) is.element(mypkg, installed.packages()[,1])
+
+if(is.installed("agricolae") == FALSE) {
+  install.packages("agricolae")
+}
 library(agricolae) # for HSD.test and friedman
 
 args <- commandArgs(TRUE)
 performanceData <- read.table(args[1])
-names(performanceData) <- c("Accuracy", "Classifier", "Cycles", "Dataset")
+COMPARE_DATASETS <- as.numeric(args[5])
+if(COMPARE_DATASETS == 1) {
+  # Very stupid hack to compare datasets :)
+  names(performanceData) <- c("Accuracy", "Dataset", "Cycles", "Classifier")
+}
+else {
+  # default
+  names(performanceData) <- c("Accuracy", "Classifier", "Cycles", "Dataset")
+}
 outputFileName <- args[2]
 stat_test = as.numeric(args[3]) # 1 for non-parametric and 2 for parameteric
 significanceLevel = as.numeric(args[4]) # 0.95
-
 
 # default values
 differenceInPerformanceMeasure <- 0 # for 2 class
@@ -103,7 +115,7 @@ for(d in 1:numDatasets) {
 
 cat("<html>\n<body>\n<table style=\"border:1px solid black;\">\n", file=outputFileName)
 cat(outputTest, "\n", file=outputFileName, append=TRUE)
-cat("<tr> <th> Classifier </th>", file=outputFileName, append=TRUE)
+cat("<tr> <th>  </th>", file=outputFileName, append=TRUE)
 
 for(d in 1:numDatasets) {
   cat("<th>", nameOfDataSets[d], "</th>", file=outputFileName, append=TRUE)
