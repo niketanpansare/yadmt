@@ -11,9 +11,9 @@ For classification, you would want to ask following questions:
  # For a given dataset, find the best classifier (in this section, the classifier refers to "classifier+parameter" combo, i.e. "svm_poly+degree2")
    * See section "How to find best classifier"
  # Given many datasets, find the best classifier on each datasets.
-   * This is same as asking question 1 on every dataset, i.e. treating each dataset independent of each other. Good news is you don't have to run _yadmt_ for every single dataset. All you have to do is modify *getParameterName* file and add path of every dataset in files.txt and _yadmt_ will take care of the rest.
+   * This is same as asking question 1 on every dataset, i.e. treating each dataset independent of each other. Good news is you don't have to run _yadmt_ for every single dataset. All you have to do is modify [http://code.google.com/p/yadmt/source/browse/trunk/src/getParameterName.sh getParameterName] file and add path of every dataset in files.txt and _yadmt_ will take care of the rest.
  # Given many datasets, find the best classifier overall.
-   * Unfortunately this is a tricky question to answer and _yadmt_ doesnot answer that. We suggest run appropriate statistical tests on accuracy file and make your own decision (See StatisticalTests.R for reference).
+   * Unfortunately this is a tricky question to answer and _yadmt_ doesnot answer that. We suggest run appropriate statistical tests on accuracy file and make your own decision (See [http://code.google.com/p/yadmt/source/browse/trunk/src/StatisticalTests.R StatisticalTests.R] for reference).
  # You have created a new classifier "control classifier". Now, 
 
 == How to find best classifier ==
