@@ -53,7 +53,12 @@ _yadmt_ outputs 2 files:
 == How to find best classifier: ==
 _yadmt_ ranks the classifiers for you by default by running [http://code.google.com/p/yadmt/source/browse/trunk/src/StatisticalTests.R StatisticalTests.R] on the accuracy file. It outputs the results in tabular html format (where entry inside the table is average accuracy over all the runs and superscripts specifies the rank of that classifier for the given dataset). Example:
 
-....
+Results from Wilcoxon signed rank test: 
+<table style="border:1px solid black;">
+<tr> <th> Classifier </th><th> all_emp_cycle10_afterBurnIn_svm_theta </th><th> all_emp_cycle11_afterBurnIn_svm_theta </th></tr> 
+<tr> <td> svm_linear </td> <td> 38.53 <sup> 1 </sup></td> <td> 37.9566666666667 <sup> 1 </sup></td> </tr>
+<tr> <td> svm_poly_2 </td> <td> 83.2066666666667 <sup> 1 </sup></td> <td> 84.98 <sup> 1 </sup></td> </tr>
+</table>
 
 [http://code.google.com/p/yadmt/source/browse/trunk/src/StatisticalTests.R StatisticalTests.R] internally runs one of the following statistical tests to compare the classifier:
  # Non-parametric tests (Wilcoxon for 2-classifiers and Friedman for n-classifiers)
