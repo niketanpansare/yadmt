@@ -289,6 +289,7 @@ if [ "$SOFTWARE" == "WEKA" ]; then
     rm $TEMP_FILE1 $TEMP_FILE2 $TEMP_FILE3 $TEMP_FILE1".arff" $TEMP_FILE2".arff" &> /dev/null
     exit 1
   fi
+  cat $TEMP_FILE1
   if ! $YADMT_DIR"/GenerateArffFiles" $TEST_FILE $TEMP_FILE2".arff" $NUM_CLASSES $NUM_FEATURES >> $TEMP_FILE3 2> $TEMP_FILE1
   then
     DETAIL_ERROR=`cat $TEMP_FILE1` # Print for debugging
@@ -296,6 +297,7 @@ if [ "$SOFTWARE" == "WEKA" ]; then
     rm $TEMP_FILE1 $TEMP_FILE2 $TEMP_FILE3 $TEMP_FILE1".arff" $TEMP_FILE2".arff" &> /dev/null
     exit 1
   fi
+  cat $TEMP_FILE1
   TEMP_FILE3_DATA=`cat $TEMP_FILE3`
 
   if [ "$CLASSIFIER" == "naive_bayes" ]; then
@@ -325,6 +327,8 @@ if [ "$SOFTWARE" == "WEKA" ]; then
       exit 1
     fi
     acquire_lock
+    cat $RESULTS_FILE
+    exit
     echo "" >> $RESULTS_FILE
     echo $CLASSIFIER": Results for input file:" $INPUT_FILE "cycle:" $CYCLE_NUM "parameter:" $PARAM_NAME >> $RESULTS_FILE
     cat $TEMP_FILE3 >> $RESULTS_FILE
