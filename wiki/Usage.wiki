@@ -9,10 +9,9 @@ For classification, you would want to ask following questions:
    * Since not many researchers are interested in this question, this feature is hidden intentionally. Set "COMPARE_DATASETS=1" in [http://code.google.com/p/yadmt/source/browse/trunk/src/yadmt.sh yadmt] to enable this (Note: only for advanced users). 
  # Given many datasets and many classifiers, find the best classifier overall.
    * This is a tricky question and _yadmt_ doesnot answer that directly (although it does that indirectly by answering questions 2 and 3). We suggest that you run appropriate statistical tests on accuracy file and make your own decision (See [http://code.google.com/p/yadmt/source/browse/trunk/src/StatisticalTests.R StatisticalTests.R] for reference).
- # I have a very large dataset and feel that off-the-self classifiers will run out of memory.
+ # Given a very large dataset (that will definitely make off-the-self classifiers run out of memory), find the best classifier.
    * As a performance hack, you can randomly partition the dataset into smaller datasets and ask question 2. However, a word of caution, some classifiers have weird property that they might work well on smaller dataset and might not work so well on larger dataset (or at least there is no guarantee that they will). We suggest using [http://mahout.apache.org/ Apache Mahout] or writing your own Hadoop-based or disk-based classifier.
- # You have developed a new classifier ("control classifier") and you want to test its performance across traditional classifiers.
+ # Given a newly developed classifier ("control classifier"), test its performance across traditional classifiers.
    * Feature under development.
  
-
 == How to find best classifier ==
