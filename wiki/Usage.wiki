@@ -54,3 +54,24 @@ _yadmt_ outputs 2 files:
 _yadmt_ ranks the classifiers for you by default by running [http://code.google.com/p/yadmt/source/browse/trunk/src/StatisticalTests.R StatisticalTests.R] on the accuracy file. It outputs the results in tabular html format (where entry inside the table is average accuracy over all the runs and superscripts specifies the rank of that classifier for the given dataset). Example:
 
 ....
+
+[http://code.google.com/p/yadmt/source/browse/trunk/src/StatisticalTests.R StatisticalTests.R] internally runs one of the following statistical tests to compare the classifier:
+ # Non-parametric tests (Wilcoxon for 2-classifiers and Friedman for n-classifiers)
+ # Parametric tests (paired t-test for 2-classifiers and Tukey's HSD for n-classifiers)
+For more details about these tests, see [http://jmlr.csail.mit.edu/papers/volume7/demsar06a/demsar06a.pdf Demsar's 2006 paper].
+
+== Supported classifiers: ==
+ # SVMLight, SVMMulticlass: linear, polynomial and RBF [http://en.wikipedia.org/wiki/Support_vector_machine SVMs].
+ # Weka: [http://en.wikipedia.org/wiki/Naive_Bayes_classifier Naive Bayes] (multinomial/normal prior),  [http://en.wikipedia.org/wiki/C4.5_algorithm C 4.5 decision tree], Multi-response linear regression,  [http://en.wikipedia.org/wiki/Logistic_regression Logistic regression] and [http://en.wikipedia.org/wiki/Random_forest Random forest].
+
+== Known Issues ==
+ # If the number of elements for a given class is too low as compared to others, it could be the case that for either test or training data, there would be no element from that class. In this case, the Weka classifiers (but not the SVMs) could fail. Following script helps sometime by randomizing the input:
+{{{
+cd ~/yadmt/
+for file in `cat files.txt`
+do
+  cp $file blah.temp
+  sort -R blah.temp > $file
+  rm blah.temp
+done
+}}}
