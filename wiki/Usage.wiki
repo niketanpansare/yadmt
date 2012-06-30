@@ -1,5 +1,23 @@
 #summary How to use yadmt
 
+== High level instructions: ==
+
+ # If you are using cluster, 
+   * Make sure that you have setup [http://www.thecloudavenue.com/2012/01/how-to-setup-password-less-ssh-to.html passwordless ssh] over your cluster.
+   * Create a login file "~/yadmt/loginFile" containing the names of machine (For Amazon EC2, use private DNS). Use ':' for local machine
+ # Create a file "~/yadmt/files.txt" that contains path of input files. The input file should be in format suggested by  [http://svmlight.joachims.org/ svmlight]. The below commands should create files.txt in the folder "~/yadmt" containing full-path of all the files inside "my_data_directory".
+{{{
+cd my_data_directory
+ls -d -1 $PWD/*.* > ~/yadmt/files.txt
+}}}
+ # Now run the following command that will walk you through the process:
+{{{
+cd ~/yadmt
+./yadmt --wizard
+}}}
+
+== Different setup: ==
+
 While using yadmt for classification, you would be interested in one of the following questions:
  # For a given dataset, find the best classifier (in this section, the classifier refers to "classifier+parameter" combo, i.e. "svm_poly+degree2")
    * See section "How to find best classifier"
