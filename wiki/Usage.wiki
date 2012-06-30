@@ -1,6 +1,6 @@
 #summary How to use yadmt
 
-For classification, you would want to ask following questions:
+While using yadmt for classification, you would be interested in one of the following questions:
  # For a given dataset, find the best classifier (in this section, the classifier refers to "classifier+parameter" combo, i.e. "svm_poly+degree2")
    * See section "How to find best classifier"
  # Given many datasets, find the best classifier on each datasets.
