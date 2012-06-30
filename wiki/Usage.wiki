@@ -33,7 +33,22 @@ While using yadmt for classification, you would be interested in one of the foll
  # Given a newly developed classifier ("control classifier"), test its performance across traditional classifiers.
    * Feature under development.
  
-== How to find best classifier ==
+== Input format: ==
+The input file has to be of format suggested by [http://svmlight.joachims.org/ SVMLight]:
+{{{
+classLabel featureNum:featureValue ...
+}}}
+The class label should be {1,-1} for binary classification and a positive integer for multi-class classification. Example:
+{{{
+1 1:1.75814e-14 2:1.74821e-05 3:1.37931e-08 4:1.25827e-14 5:4.09717e-05 6:1.28084e-09 7:2.80137e-22 8:2.17821e-24 9:0.00600121 10:0.002669 
+}}}
+
+== Output format: ==
+_yadmt_ outputs 2 files:
+ # An accuracy file with format: "accuracy classifierName cycleNumber dataset"
+ # An HTML file comparing the classifiers that is described in below section.
+
+== How to find best classifier: ==
 _yadmt_ ranks the classifiers for you by default by running [http://code.google.com/p/yadmt/source/browse/trunk/src/StatisticalTests.R StatisticalTests.R] on the accuracy file. It outputs the results in tabular html format (where entry inside the table is average accuracy over all the runs and superscripts specifies the rank of that classifier for the given dataset). Example:
 
 ....
