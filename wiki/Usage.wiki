@@ -55,7 +55,7 @@ _yadmt_ ranks the classifiers for you by default by running [http://code.google.
 
 ....
 
-To get the above table, [http://code.google.com/p/yadmt/source/browse/trunk/src/StatisticalTests.R StatisticalTests.R] internally runs one of the following statistical tests to compare the classifier:
+To get the above table, [http://code.google.com/p/yadmt/source/browse/trunk/src/StatisticalTests.R StatisticalTests.R] runs one of the following statistical tests to compare the classifier:
  # Non-parametric tests ([http://en.wikipedia.org/wiki/Wilcoxon_signed-rank_test Wilcoxon test] for 2-classifiers and [http://en.wikipedia.org/wiki/Friedman_test Friedman test] for n-classifiers)
  # Parametric tests ([http://en.wikipedia.org/wiki/Student's_t-test paired t-test] for 2-classifiers and [http://en.wikipedia.org/wiki/Tukey%27s_range_test Tukey's HSD test] for n-classifiers)
 For more details about these tests, see [http://jmlr.csail.mit.edu/papers/volume7/demsar06a/demsar06a.pdf Demsar's 2006 paper].
