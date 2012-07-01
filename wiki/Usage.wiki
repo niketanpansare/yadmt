@@ -53,7 +53,14 @@ _yadmt_ outputs 2 files:
 == How to find best classifier: ==
 _yadmt_ ranks the classifiers for you by default by running [http://code.google.com/p/yadmt/source/browse/trunk/src/StatisticalTests.R StatisticalTests.R] on the accuracy file. It outputs the results in tabular html format (where entry inside the table is average accuracy over all the runs and superscripts specifies the rank of that classifier for the given dataset). Example:
 
-....
+<table style="border:1px solid black;">
+Results from Friedman rank sum test:
+<tr> <th>  </th><th> dataset1 </th><th> dataset2 </th></tr>
+<tr> <td> svm_linear </td> <td> 89.879 <sup> 1 </sup></td> <td> 89.005 <sup> 2 </sup></td> </tr>
+<tr> <td> svm_poly_2 </td> <td> 89.805 <sup> 1 </sup></td> <td> 89.663 <sup> 2 </sup></td> </tr>
+<tr> <td> svm_poly_3 </td> <td> 89.832 <sup> 1 </sup></td> <td> 90.242 <sup> 1 </sup></td> </tr>
+<tr> <td> svm_rbf_0.1 </td> <td> 90.289 <sup> 1 </sup></td> <td> 89.032 <sup> 3 </sup></td> </tr>
+</table>
 
 To get the above table, [http://code.google.com/p/yadmt/source/browse/trunk/src/StatisticalTests.R StatisticalTests.R] runs one of the following statistical tests to compare the classifier:
  # Non-parametric tests ([http://en.wikipedia.org/wiki/Wilcoxon_signed-rank_test Wilcoxon test] for 2-classifiers and [http://en.wikipedia.org/wiki/Friedman_test Friedman test] for n-classifiers)
