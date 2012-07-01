@@ -13,13 +13,11 @@ library(agricolae) # for HSD.test and friedman
 args <- commandArgs(TRUE)
 performanceData <- read.table(args[1])
 COMPARE_DATASETS <- as.numeric(args[5])
+# default
+names(performanceData) <- c("Accuracy", "Classifier", "Cycles", "Dataset")
 if(COMPARE_DATASETS == 1) {
   # Very stupid hack to compare datasets :)
   names(performanceData) <- c("Accuracy", "Dataset", "Cycles", "Classifier")
-}
-else {
-  # default
-  names(performanceData) <- c("Accuracy", "Classifier", "Cycles", "Dataset")
 }
 outputFileName <- args[2]
 stat_test = as.numeric(args[3]) # 1 for non-parametric and 2 for parameteric
