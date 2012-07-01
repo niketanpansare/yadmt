@@ -185,14 +185,23 @@ PARAM_NAME=`$PROGRAMX $INPUT_FILE`
 
 # Assumes data in $TEMP_FILE1
 function getSVMAccuracy {
-  # Zero/one-error on test set: 43.73% (296 correct, 230 incorrect, 526 total)
-  # Accuracy on test set: 43.73% (296 correct, 230 incorrect, 526 total)
-  set -- $(cat $TEMP_FILE1 | tail -n 1)
-  if [ "$4" == "set:" ]; then
-    local ACCURACY_WITH_PERCENT=$5
-    local ACCURACY=`echo "${ACCURACY_WITH_PERCENT%?}"`
-    echo $ACCURACY
-  else
+  local NUM_LINES_TEMP=`cat $TEMP_FILE1 | wc -l`
+  DONE_ACCURACY="FALSE"
+  for i in `seq 1 $NUM_LINES_TEMP`
+  do
+    set -- $(cat $TEMP_FILE1 | head -n $i | tail -n 1)
+    DAT=$1" "$2" "$3" "$4
+    # Zero/one-error on test set: 43.73% (296 correct, 230 incorrect, 526 total)
+    # Accuracy on test set: 43.73% (296 correct, 230 incorrect, 526 total)
+    if [ "$DAT" == "Zero/one-error on test set:" -o "$DAT" == "Accuracy on test set:" ]; then
+      local ACCURACY_WITH_PERCENT=$5
+      local ACCURACY=`echo "${ACCURACY_WITH_PERCENT%?}"`
+      echo $ACCURACY
+      DONE_ACCURACY="TRUE"
+      break
+    fi
+  done
+  if [ "$DONE_ACCURACY" == "FALSE" ]; then
     echo "-1"
   fi
 }

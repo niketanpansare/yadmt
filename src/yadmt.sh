@@ -8,7 +8,7 @@
 #  Created by Niketan Pansare
 
 # Has to be of format "configFile,inputFile,cycleNum,classifier,optional_params" without any spaces
-COMPARE_DATASETS=0 # Set this to 1 if you want to compare datasets. Caution: Only for advanced users.
+COMPARE_DATASETS="0" # Set this to 1 if you want to compare datasets. Caution: Only for advanced users.
 
 PGM_NAME=$0
 IS_WIZARD="FALSE"
