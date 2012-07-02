@@ -67,7 +67,8 @@ function release_lock {
 ###########################
 function cleanup {
   # cleanup code: Don't delete lock on finish since it can be held by some other instance of this script
-  rm -rf $RANDOMIZED_INPUT_FILE $MODEL_FILE $TEMP_FILE1 $TEMP_FILE2 $TEMP_FILE3 $PRED_FILE $TRAIN_FILE $TEST_FILE &> /dev/null 
+  rm -rf $RANDOMIZED_INPUT_FILE $MODEL_FILE $TEMP_FILE1 $TEMP_FILE2 $TEMP_FILE3 $PRED_FILE $TRAIN_FILE $TEST_FILE  &> /dev/null 
+
 #if [ "$EXPERIMENTAL_SETUP" != "1" ]; then 
 # Ignoring any disk issue for now !!
 #FREE_DISK=`df /home | awk '{ print $5 }' | tail -n 1 | sed 's/%//'`
@@ -290,24 +291,10 @@ else
   rm $TEMP_FILE1 $TEMP_FILE2 $MODEL_FILE $PRED_FILE &> /dev/null
 fi
 
-if [ "$SOFTWARE" == "WEKA" ]; then
-  if ! $YADMT_DIR"/GenerateArffFiles" $TRAIN_FILE $TEMP_FILE1".arff" $NUM_CLASSES $NUM_FEATURES > $TEMP_FILE3 2> $TEMP_FILE1
-  then
-    DETAIL_ERROR=`cat $TEMP_FILE1` # Print for debugging
-    echo >&2 $PGM_NAME " - Error while generating arff files."
-    rm $TEMP_FILE1 $TEMP_FILE2 $TEMP_FILE3 $TEMP_FILE1".arff" $TEMP_FILE2".arff" &> /dev/null
-    exit 1
-  fi
-#cat $TEMP_FILE1 # For checking the error
-  if ! $YADMT_DIR"/GenerateArffFiles" $TEST_FILE $TEMP_FILE2".arff" $NUM_CLASSES $NUM_FEATURES >> $TEMP_FILE3 2> $TEMP_FILE1
-  then
-    DETAIL_ERROR=`cat $TEMP_FILE1` # Print for debugging
-    echo >&2 $PGM_NAME " - Error while generating arff files."
-    rm $TEMP_FILE1 $TEMP_FILE2 $TEMP_FILE3 $TEMP_FILE1".arff" $TEMP_FILE2".arff" &> /dev/null
-    exit 1
-  fi
-#cat $TEMP_FILE1 # For checking the error
-  TEMP_FILE3_DATA=`cat $TEMP_FILE3`
+if [ "$CLASSIFIER" == "naive_bayes" -o "$CLASSIFIER" == "c45_decision_tree" -o "$CLASSIFIER" == "linear_regression" -o "$CLASSIFIER" == "logistic_regression" -o "$CLASSIFIER" == "random_forest"  ]; then
+
+  $YADMT_DIR"/GenerateArffFiles" $TRAIN_FILE $TEMP_FILE1".arff" $NUM_CLASSES $NUM_FEATURES
+  $YADMT_DIR"/GenerateArffFiles" $TEST_FILE $TEMP_FILE2".arff" $NUM_CLASSES $NUM_FEATURES
 
   if [ "$CLASSIFIER" == "naive_bayes" ]; then
     if [ "$PRIOR" == "multinomial" ]; then
@@ -327,30 +314,24 @@ if [ "$SOFTWARE" == "WEKA" ]; then
   elif [ "$CLASSIFIER" == "random_forest" ]; then
     WEKA_CLASS="weka.classifiers.trees.RandomForest"
   fi
-
-  if [ "$TEMP_FILE3_DATA" == "" ]; then
-    if ! java "-Xmx"$MAX_MEMORY_CLASSIFIER"m" -cp $YADMT_DIR"/weka.jar" $WEKA_CLASS -t $TEMP_FILE1".arff" -T $TEMP_FILE2".arff" > $TEMP_FILE3 2>>  $RESULTS_FILE
-    then
-      echo >&2 $PGM_NAME " - Error while executing weka "$CLASSIFIER" (See " $RESULTS_FILE " for detailed description of error).\n"
-      rm $TEMP_FILE1 $TEMP_FILE2 $TEMP_FILE3 $TEMP_FILE1".arff" $TEMP_FILE2".arff" &> /dev/null
-      exit 1
-    fi
-    acquire_lock
-#cat $RESULTS_FILE # For checking the error
-    echo "" >> $RESULTS_FILE
-    echo $CLASSIFIER": Results for input file:" $INPUT_FILE "cycle:" $CYCLE_NUM "parameter:" $PARAM_NAME >> $RESULTS_FILE
-    cat $TEMP_FILE3 >> $RESULTS_FILE
-    # Note the positional parameters are unset, so don't use $PGM_NAME, $1, .. after this
-    TAIL_NUM=$(($NUM_CLASSES+16))
-    cat $TEMP_FILE3 | tail -n $TAIL_NUM | head -n 10 > $TEMP_FILE1
-    echo $(getWekaAccuracy) $CLASSIFIER $CYCLE_NUM $PARAM_NAME >> $ACCURACY_FILE
-    release_lock
-    rm $TEMP_FILE1 $TEMP_FILE2 $TEMP_FILE3 $TEMP_FILE1".arff" $TEMP_FILE2".arff"  &> /dev/null
-  else
-    echo >&2 $PGM_NAME " - Error while generating arff files.\n"
+  
+  if ! java "-Xmx"$MAX_MEMORY_CLASSIFIER"m" -cp $YADMT_DIR"/weka.jar" $WEKA_CLASS -t $TEMP_FILE1".arff" -T $TEMP_FILE2".arff" > $TEMP_FILE3 2>>  $RESULTS_FILE
+  then
+    echo >&2 $PGM_NAME " - Error while executing weka "$CLASSIFIER" (See " $RESULTS_FILE " for detailed description of error).\n"
     rm $TEMP_FILE1 $TEMP_FILE2 $TEMP_FILE3 $TEMP_FILE1".arff" $TEMP_FILE2".arff" &> /dev/null
     exit 1
   fi
+  acquire_lock
+#cat $RESULTS_FILE # For checking the error
+  echo "" >> $RESULTS_FILE
+  echo $CLASSIFIER": Results for input file:" $INPUT_FILE "cycle:" $CYCLE_NUM "parameter:" $PARAM_NAME >> $RESULTS_FILE
+  cat $TEMP_FILE3 >> $RESULTS_FILE
+  # Note the positional parameters are unset, so don't use $PGM_NAME, $1, .. after this
+  TAIL_NUM=$(($NUM_CLASSES+16))
+  cat $TEMP_FILE3 | tail -n $TAIL_NUM | head -n 10 > $TEMP_FILE1
+  echo $(getWekaAccuracy) $CLASSIFIER $CYCLE_NUM $PARAM_NAME >> $ACCURACY_FILE
+  release_lock
+  rm $TEMP_FILE1 $TEMP_FILE2 $TEMP_FILE3 $TEMP_FILE1".arff" $TEMP_FILE2".arff"  &> /dev/null
   
 fi
 
