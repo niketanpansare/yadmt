@@ -1,0 +1,86 @@
+## High level instructions: ##
+
+  1. If you are using cluster,
+    * Make sure that you have setup [passwordless ssh](http://www.thecloudavenue.com/2012/01/how-to-setup-password-less-ssh-to.html) over your cluster.
+    * Create a login file "~/yadmt/loginFile" containing the names of machine (For Amazon EC2, use private DNS). Use ':' for local machine
+  1. Create a file "~/yadmt/files.txt" that contains path of input files. The input file should be in format suggested by  [svmlight](http://svmlight.joachims.org/). The below commands should create files.txt in the folder "~/yadmt" containing full-path of all the files inside "my\_data\_directory".
+```
+cd my_data_directory
+ls -d -1 $PWD/*.* > ~/yadmt/files.txt
+```
+  1. Now run the following command that will walk you through the process:
+```
+cd ~/yadmt
+./yadmt --wizard
+```
+
+## Different setup: ##
+
+While using yadmt for classification, you would be interested in one of the following questions:
+  1. For a given dataset, find the best classifier (in this section, the classifier refers to "classifier+parameter" combo, i.e. "svm\_poly+degree2")
+    * See section "How to find best classifier"
+  1. Given many datasets, find the best classifier on each datasets.
+    * This is same as asking question 1 on every dataset, i.e. treating every dataset independent of each other. Good news is you don't have to run _yadmt_ for every single dataset. All you have to do is modify [getParameterName](http://code.google.com/p/yadmt/source/browse/trunk/src/getParameterName.sh) file and add path of every dataset in files.txt and _yadmt_ will take care of the rest.
+  1. Given many datasets and just 1 classifier, compare the classifier's performance across the datasets.
+    * Since not many researchers are interested in this question, this feature is hidden intentionally. Set "COMPARE\_DATASETS=1" in [yadmt](http://code.google.com/p/yadmt/source/browse/trunk/src/yadmt.sh) to enable this (Note: only for advanced users).
+    * This is useful for people that have developed feature selection models like [LDA](http://en.wikipedia.org/wiki/Latent_Dirichlet_allocation) or [CTM](http://www.cs.cmu.edu/~lafferty/pub/ctm.pdf) and wants to compare their efficacy using classification. In this case, we suggest that you re-run your models to generate _n_ datasets and specify 1 for number of cycles in _yadmt_ and not vice-versa.
+  1. Given many datasets and many classifiers, find the best classifier overall.
+    * This is a tricky question and _yadmt_ doesnot answer that directly (although it does that indirectly by answering questions 2 and 3). We suggest that you run appropriate statistical tests on accuracy file and make your own decision (See [StatisticalTests.R](http://code.google.com/p/yadmt/source/browse/trunk/src/StatisticalTests.R) for reference).
+  1. Given a very large dataset (that will definitely make off-the-self classifiers run out of memory), find the best classifier.
+    * As a performance hack, you can randomly partition the dataset into smaller datasets and ask question 2. However, a word of caution, some classifiers have weird property that they might work well on smaller datasets and might not work so well on larger dataset (or at least there is no guarantee that they will). We suggest using [Apache Mahout](http://mahout.apache.org/) or writing your own Hadoop-based or disk-based classifier.
+  1. Given a newly developed classifier ("control classifier"), test its performance across traditional classifiers.
+    * Feature under development.
+  1. Ask above questions by for different performance measures like ROC, precision/recall, etc
+    * Feature under development.
+
+## Input format: ##
+The input file has to be of format suggested by [SVMLight](http://svmlight.joachims.org/):
+```
+classLabel featureNum:featureValue ...
+```
+The class label should be {1,-1} for binary classification and a positive integer for multi-class classification. Example:
+```
+1 1:1.75814e-14 2:1.74821e-05 3:1.37931e-08 4:1.25827e-14 5:4.09717e-05 6:1.28084e-09 7:2.80137e-22 8:2.17821e-24 9:0.00600121 10:0.002669 
+```
+
+## Output format: ##
+_yadmt_ outputs 2 files:
+  1. An accuracy file with format: "accuracy classifierName cycleNumber dataset"
+  1. An HTML file comparing the classifiers that is described in below section.
+
+## How to find best classifier: ##
+_yadmt_ ranks the classifiers for you by default by running [StatisticalTests.R](http://code.google.com/p/yadmt/source/browse/trunk/src/StatisticalTests.R) on the accuracy file. It outputs the results in tabular html format (where entry inside the table is average accuracy over all the runs and superscripts specifies the rank of that classifier for the given dataset). Example:
+
+<table>
+Results from Friedman rank sum test:<br>
+<tr> <th>  </th><th> dataset1 </th><th> dataset2 </th></tr>
+<tr> <td> svm_linear </td> <td> 89.879 <sup> 1 </sup></td> <td> 89.005 <sup> 2 </sup></td> </tr>
+<tr> <td> svm_poly_2 </td> <td> 89.805 <sup> 1 </sup></td> <td> 89.663 <sup> 2 </sup></td> </tr>
+<tr> <td> svm_poly_3 </td> <td> 89.832 <sup> 1 </sup></td> <td> 90.242 <sup> 1 </sup></td> </tr>
+<tr> <td> svm_rbf_0.1 </td> <td> 90.289 <sup> 1 </sup></td> <td> 89.032 <sup> 3 </sup></td> </tr>
+</table>
+
+The above table suggests that after running Friedman test, for dataset1, all the classifiers performed equally well. In this case, I would suggest increase the number of cycles or decrease the level of significance to get more comparable ranking.
+
+But for dataset2, polynomial SVM with degree 3 performed significantly better than linear and polynomial SVM with degree 2, which in turn performed significantly better than SVM RBF with gamma 0.1.
+
+To get the above table, [StatisticalTests.R](http://code.google.com/p/yadmt/source/browse/trunk/src/StatisticalTests.R) runs one of the following statistical tests to compare the classifier:
+  1. Non-parametric tests ([Wilcoxon test](http://en.wikipedia.org/wiki/Wilcoxon_signed-rank_test) for 2-classifiers and [Friedman test](http://en.wikipedia.org/wiki/Friedman_test) for n-classifiers)
+  1. Parametric tests ([paired t-test](http://en.wikipedia.org/wiki/Student's_t-test) for 2-classifiers and [Tukey's HSD test](http://en.wikipedia.org/wiki/Tukey%27s_range_test) for n-classifiers)
+For more details about these tests, see [Demsar's 2006 paper](http://jmlr.csail.mit.edu/papers/volume7/demsar06a/demsar06a.pdf).
+
+## Supported classifiers: ##
+  1. SVMLight, SVMMulticlass: linear, polynomial and RBF [SVMs](http://en.wikipedia.org/wiki/Support_vector_machine).
+  1. Weka: [Naive Bayes](http://en.wikipedia.org/wiki/Naive_Bayes_classifier) (multinomial/normal prior),  [C 4.5 decision tree](http://en.wikipedia.org/wiki/C4.5_algorithm), Multi-response linear regression,  [Logistic regression](http://en.wikipedia.org/wiki/Logistic_regression) and [Random forest](http://en.wikipedia.org/wiki/Random_forest).
+
+## Known Issues ##
+  1. If the number of elements for a given class is too low as compared to others, it could be the case that for either test or training data, there would be no element from that class. In this case, the Weka classifiers (but not the SVMs) could fail. Following script helps sometime by randomizing the input:
+```
+cd ~/yadmt/
+for file in `cat files.txt`
+do
+  cp $file blah.temp
+  sort -R blah.temp > $file
+  rm blah.temp
+done
+```
