@@ -31,10 +31,12 @@ Please read Usage wiki-page for more details.
   * Create a login file "~/yadmt/loginFile" containing the names of machine (For Amazon EC2, use private DNS). Use ':' for local machine 
   
 2. Create a file "~/yadmt/files.txt" that contains path of input files. The input file should be in format suggested by svmlight. The below commands should create files.txt in the folder "~/yadmt" containing full-path of all the files inside "my_data_directory".
+
     cd my_data_directory
     ls -d -1 $PWD/*.* > ~/yadmt/files.txt
 
 3. Now run the following command that will walk you through the process:
+
     cd ~/yadmt
     ./yadmt --wizard
 
